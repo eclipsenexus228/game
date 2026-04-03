@@ -5,46 +5,107 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Grave Game</title>
     <style>
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #000; display: flex; justify-content: center; align-items: center; }
-        #game-container { position: relative; width: 100vw; height: 177.78vw; max-height: 100vh; max-width: 56.25vh; overflow: hidden; }
-        #background { width: 100%; height: 100%; object-fit: cover; }
-        #click-area { position: absolute; top: 0; left: 0; width: 100%; height: 100%; cursor: pointer; z-index: 10; }
-        #info { position: absolute; top: 10px; left: 10px; color: white; font-family: sans-serif; background: rgba(0,0,0,0.5); padding: 5px 10px; border-radius: 5px; pointer-events: none; z-index: 20; }
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 177.78vw; /* Соотношение 9:16 для телефона */
+            max-height: 100vh;
+            max-width: 56.25vh;
+            overflow: hidden;
+        }
+
+        #background {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        #click-area {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+            z-index: 10;
+        }
+
+        #info {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: white;
+            font-family: sans-serif;
+            background: rgba(0,0,0,0.5);
+            padding: 5px 10px;
+            border-radius: 5px;
+            pointer-events: none;
+            z-index: 20;
+        }
     </style>
 </head>
 <body>
-    <div id="game-container">
-        <img id="background" src="bg0.jpg">
-        <div id="click-area" onclick="handleAction()"></div>
-        <div id="info">Прогресс: <span id="percent">0</span>%</div>
-    </div>
 
-    <script>
-        let progress = 0;
-        let isDigging = true;
-        const bg = document.getElementById('background');
-        const percentText = document.getElementById('percent');
+<div id="game-container">
+    <img id="background" src="фон.png">
+    
+    <div id="click-area" onclick="handleAction()"></div>
+    
+    <div id="info">Прогресс: <span id="percent">0</span>%</div>
+</div>
 
-        function handleAction() {
-            if (isDigging) {
-                progress += 10;
-                if (progress >= 100) { progress = 100; isDigging = false; }
-            } else {
-                progress -= 10;
-                if (progress <= 0) { progress = 0; isDigging = true; }
+<script>
+    let progress = 0;
+    let isDigging = true; // true - копаем вниз, false - обратно
+    const bg = document.getElementById('background');
+    const percentText = document.getElementById('percent');
+
+    function handleAction() {
+        if (isDigging) {
+            progress += 10; 
+            if (progress >= 100) {
+                progress = 100;
+                isDigging = false; // Докопали до конца
             }
-            updateUI();
+        } else {
+            progress -= 10;
+            if (progress <= 0) {
+                progress = 0;
+                isDigging = true; // Раскопали до начала
+            }
         }
+        updateUI();
+    }
 
-        function updateUI() {
-            percentText.innerText = progress;
-            // Используем новые названия .jpg
-            if (progress >= 100) { bg.src = "bg100.jpg"; }
-            else if (progress >= 60) { bg.src = "bg60.jpg"; }
-            else if (progress >= 40) { bg.src = "bg40.jpg"; }
-            else if (progress >= 20) { bg.src = "bg20.jpg"; }
-            else { bg.src = "bg0.jpg"; }
+    function updateUI() {
+        percentText.innerText = progress;
+
+        // Проверяем проценты и меняем картинки .png
+        if (progress >= 100) {
+            bg.src = "100.png";
+        } else if (progress >= 60) {
+            bg.src = "60.png";
+        } else if (progress >= 40) {
+            bg.src = "40.png";
+        } else if (progress >= 20) {
+            bg.src = "20.png";
+        } else {
+            bg.src = "фон.png";
         }
-    </script>
+    }
+</script>
+
 </body>
 </html>
