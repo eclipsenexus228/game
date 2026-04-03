@@ -4,11 +4,11 @@ from aiogram.filters import CommandStart
 from aiogram.types import WebAppInfo
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
-# Твой токен
+# Твой токен (лучше держать его в секрете!)
 TOKEN = "8706720051:AAG0-LW48AzHbzGjy0eQzwHpZIjmF_LhpN4"
 
-# Твоя ссылка на игру
-WEB_APP_URL = "https://eclipsenexus228.github.io/game/groby/index.html"
+# Твоя ПРАВИЛЬНАЯ ссылка (без /groby/index.html)
+WEB_APP_URL = "https://eclipsenexus228.github.io/game/"
 
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
@@ -28,6 +28,8 @@ async def cmd_start(message: types.Message):
 
 async def main():
     print("Бот запущен...")
+    # Удаляем вебхуки, чтобы бот точно отвечал на твои команды
+    await bot.delete_webhook(drop_pending_updates=True)
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
