@@ -2,54 +2,108 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>В Могиле</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Grave Game</title>
     <style>
-        body { margin: 0; padding: 0; background: #000; color: white; font-family: sans-serif; overflow: hidden; display: flex; justify-content: center; align-items: center; height: 100vh; }
-        #game-container { width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; cursor: pointer; position: relative; }
-        #background { width: 100%; height: 100%; object-fit: cover; }
-        .info { position: absolute; top: 20px; background: rgba(0,0,0,0.7); padding: 10px 20px; border-radius: 15px; z-index: 10; pointer-events: none; }
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 177.78vw; /* Соотношение 9:16 */
+            max-height: 100vh;
+            max-width: 56.25vh;
+            overflow: hidden;
+        }
+
+        #background {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        #click-area {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+            z-index: 10;
+        }
+
+        #info {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: white;
+            font-family: sans-serif;
+            background: rgba(0,0,0,0.5);
+            padding: 5px 10px;
+            border-radius: 5px;
+            pointer-events: none;
+            z-index: 20;
+        }
     </style>
 </head>
 <body>
-    <div id="game-container" onclick="dig()">
-        <div class="info" id="status">Прогресс: 0%</div>
-        <img id="background" src="фон.png" alt="Загрузка...">
-    </div>
-    
-    <script>
-        let tg = window.Telegram.WebApp;
-        tg.expand();
 
-        let progress = 0;
-        const bg = document.getElementById('background');
-        const status = document.getElementById('status');
+<div id="game-container">
+    <img id="background" src="фон.png">
+    <div id="click-area" onclick="handleAction()"></div>
+    <div id="info">Прогресс: <span id="percent">0</span>%</div>
+</div>
 
-        function dig() {
-            if (progress < 100) {
-                progress += 10; 
-                if (progress > 100) progress = 100;
-                updateUI();
-            }
-        }
+<script>
+    let progress = 0;
+    let isDigging = true; // true - закапываем, false - раскапываем
+    const bg = document.getElementById('background');
+    const percentText = document.getElementById('percent');
 
-        function updateUI() {
-            status.innerText = `Прогресс: ${progress}%`;
-            
-            // Названия файлов строго по твоему скриншоту
+    function handleAction() {
+        if (isDigging) {
+            progress += 10; // Шаг закапывания
             if (progress >= 100) {
-                bg.src = "фон 100%.png";
-            } else if (progress >= 60) {
-                bg.src = "фон 60%.png";
-            } else if (progress >= 40) {
-                bg.src = "фон 40%.png";
-            } else if (progress >= 20) {
-                bg.src = "фон 20%.png";
-            } else {
-                bg.src = "фон.png";
+                progress = 100;
+                isDigging = false; // Дошли до конца, теперь будем раскапывать
+            }
+        } else {
+            progress -= 10; // Шаг раскапывания
+            if (progress <= 0) {
+                progress = 0;
+                isDigging = true; // Раскопали полностью, теперь снова закапываем
             }
         }
-    </script>
+        updateUI();
+    }
+
+    function updateUI() {
+        percentText.innerText = progress;
+
+        // Твоя система смены фонов
+        if (progress >= 100) {
+            bg.src = "100.png";
+        } else if (progress >= 60) {
+            bg.src = "60.png";
+        } else if (progress >= 40) {
+            bg.src = "40.png";
+        } else if (progress >= 20) {
+            bg.src = "20.png";
+        } else {
+            bg.src = "фон.png";
+        }
+    }
+</script>
+
 </body>
 </html>
