@@ -8,7 +8,7 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 TOKEN = "8706720051:AAG0-LW48AzHbzGjy0eQzwHpZIjmF_LhpN4"
 
 # Твоя ссылка на игру
-WEB_APP_URL = "https://eclipsenexus228.github.io/gamegroby/groby/index.html"
+WEB_APP_URL = "https://eclipsenexus228.github.io/game/groby/index.html"
 
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
