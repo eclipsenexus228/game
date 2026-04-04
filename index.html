@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Grave Game</title>
+    <title>Grave Game Online</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         body, html {
@@ -12,85 +12,66 @@
             display: flex; justify-content: center; align-items: center;
             cursor: none; -webkit-user-select: none; user-select: none;
         }
-
         #game-container {
-            position: relative;
-            width: 100vw; height: 177.78vw;
+            position: relative; width: 100vw; height: 177.78vw;
             max-height: 100vh; max-width: 56.25vh;
             overflow: hidden; touch-action: none;
         }
-
-        #background {
-            width: 100%; height: 100%;
-            object-fit: cover; pointer-events: none;
-        }
+        #background { width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
 
         #user-profile {
-            position: absolute;
-            top: 52%; 
-            left: 28%; 
-            transform: translateX(-50%);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 8px;
-            z-index: 100;
-            pointer-events: none;
+            position: absolute; top: 52%; left: 28%; transform: translateX(-50%);
+            display: flex; flex-direction: column; align-items: center;
+            gap: 8px; z-index: 100; pointer-events: none;
         }
-
-        #user-avatar {
-            width: 70px;
-            height: 70px;
-            border-radius: 0px;
-            border: 3px solid #fff;
-            background: #222;
-            object-fit: cover;
-            box-shadow: 0 0 20px rgba(0,0,0,0.8);
-        }
-
+        #user-avatar { width: 70px; height: 70px; border: 3px solid #fff; background: #222; object-fit: cover; }
         #user-name {
-            color: white;
-            font-family: sans-serif;
-            font-size: 15px;
-            font-weight: bold;
-            text-shadow: 2px 2px 4px rgba(0,0,0,1);
-            background: rgba(0,0,0,0.6);
-            padding: 4px 10px;
-            white-space: nowrap;
+            color: white; font-family: sans-serif; font-size: 14px; font-weight: bold;
+            text-shadow: 2px 2px 4px #000; background: rgba(0,0,0,0.6); padding: 4px 10px;
         }
+
+        #leaderboard-btn {
+            position: absolute; top: 10px; right: 10px; z-index: 200;
+            background: rgba(0,0,0,0.8); color: white; border: 1px solid #fff;
+            padding: 8px 12px; border-radius: 5px; font-family: sans-serif; cursor: pointer; pointer-events: auto;
+        }
+        #leaderboard-panel {
+            position: absolute; top: 55px; right: 10px; width: 220px;
+            max-height: 350px; background: rgba(0,0,0,0.95); border: 1px solid #444;
+            border-radius: 8px; z-index: 199; display: none; flex-direction: column;
+            padding: 12px; pointer-events: auto;
+        }
+        #players-list { overflow-y: auto; list-style: none; padding: 0; margin: 0; }
+        .player-item { padding: 10px; border-bottom: 1px solid #333; color: #ccc; cursor: pointer; font-family: sans-serif; }
 
         #shovel-cursor {
-            position: fixed;
-            width: 110px;
-            height: auto;
-            pointer-events: none;
-            z-index: 9999;
-            transform: translate(-20%, -80%) rotate(-10deg);
-            display: none;
+            position: fixed; width: 110px; height: auto;
+            pointer-events: none; z-index: 99999; 
+            transform: translate(-20%, -80%) rotate(-10deg); display: none;
         }
-
         #info {
-            position: absolute; top: 10px; right: 15px;
+            position: absolute; top: 10px; left: 15px;
             color: rgba(255,255,255,0.7); font-family: monospace;
-            background: rgba(0,0,0,0.5); padding: 4px 10px;
-            border-radius: 5px; z-index: 20;
+            background: rgba(0,0,0,0.5); padding: 4px 10px; z-index: 20;
         }
     </style>
 </head>
 <body>
 
-<audio id="dig-sound" src="dig.mp3" preload="auto"></audio>
-
-<img id="shovel-cursor" src="lap1.png" alt="shovel">
+<audio id="dig-sound" preload="auto"><source src="dig.mp3" type="audio/mpeg"></audio>
+<img id="shovel-cursor" src="lap1.png" onerror="this.style.opacity='0'">
 
 <div id="game-container">
     <img id="background" src="фон.png">
-    
     <div id="user-profile">
-        <img id="user-avatar" src="" alt="">
-        <span id="user-name">Loading...</span>
+        <img id="user-avatar" src="">
+        <span id="user-name">...</span>
     </div>
-
+    <div id="leaderboard-btn" onclick="togglePanel(event)">Игроки 👥</div>
+    <div id="leaderboard-panel">
+        <div class="player-item" style="color: #5af; font-weight: bold;" onclick="goHome(event)">🏠 Моя могила</div>
+        <ul id="players-list"></ul>
+    </div>
     <div id="info">Progress: <span id="percent">0</span>%</div>
 </div>
 
@@ -98,77 +79,150 @@
     const tg = window.Telegram.WebApp;
     tg.expand();
 
-    const user = tg.initDataUnsafe?.user;
-    const avatarImg = document.getElementById('user-avatar');
-    const nameSpan = document.getElementById('user-name');
-    const digSound = document.getElementById('dig-sound');
+    // --- НАСТРОЙКИ СЕРВЕРА ---
+    // Замени на свою ссылку от Ngrok, когда запустишь его!
+    const SERVER_URL = "http://localhost:8080"; 
 
+    const shovel = document.getElementById('shovel-cursor');
+    const bg = document.getElementById('background');
+    const digSound = document.getElementById('dig-sound');
+    const panel = document.getElementById('leaderboard-panel');
+
+    let currentGrave = { id: "", name: "", progress: 0 };
+    let me = { id: "0", name: "Игрок", avatar: "", progress: 0 };
+    let allPlayers = [];
+
+    // Инициализация данных из Telegram
+    const user = tg.initDataUnsafe?.user;
     if (user) {
-        nameSpan.innerText = user.first_name;
-        avatarImg.src = user.photo_url || `https://ui-avatars.com/api/?name=${user.first_name}&background=random&color=fff&size=150`;
-    } else {
-        nameSpan.innerText = "Игрок";
-        avatarImg.src = `https://ui-avatars.com/api/?name=P&background=333&color=fff&size=150`;
+        me.id = user.id.toString();
+        me.name = user.first_name;
+        me.avatar = user.photo_url || `https://ui-avatars.com/api/?name=${user.first_name}&background=random&color=fff`;
     }
 
-    let progress = 0;
-    let isDigging = true;
-    const bg = document.getElementById('background');
-    const shovel = document.getElementById('shovel-cursor');
-    const percentText = document.getElementById('percent');
+    // Загрузка списка игроков с сервера
+    async function fetchPlayers() {
+        try {
+            const response = await fetch(`${SERVER_URL}/api/players`);
+            allPlayers = await response.json();
+            
+            // Если мы в списке есть, обновляем свой прогресс
+            const myData = allPlayers.find(p => p.id === me.id);
+            if (myData) me.progress = myData.progress;
+            
+            // Если мы сейчас смотрим чью-то могилу, обновляем и её данные
+            const currentData = allPlayers.find(p => p.id === currentGrave.id);
+            if (currentData) {
+                currentGrave.progress = currentData.progress;
+                updateView();
+            }
+        } catch (e) {
+            console.error("Ошибка загрузки данных:", e);
+        }
+    }
 
-    function updateShovelPos(x, y) {
+    // Отправка прогресса на сервер
+    async function syncProgress(targetId, change) {
+        try {
+            const response = await fetch(`${SERVER_URL}/api/update`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: targetId, change: change })
+            });
+            const result = await response.json();
+            if (result.status === "ok") {
+                currentGrave.progress = result.new_progress;
+                if (targetId === me.id) me.progress = result.new_progress;
+                updateView();
+            }
+        } catch (e) {
+            console.error("Ошибка синхронизации:", e);
+        }
+    }
+
+    function goHome(e) {
+        if(e) e.stopPropagation();
+        panel.style.display = 'none';
+        currentGrave.id = me.id;
+        currentGrave.name = me.name;
+        currentGrave.progress = me.progress;
+        document.getElementById('user-name').innerText = me.name;
+        document.getElementById('user-avatar').src = me.avatar;
+        updateView();
+    }
+
+    function togglePanel(e) {
+        e.stopPropagation();
+        panel.style.display = (panel.style.display === 'flex') ? 'none' : 'flex';
+        if (panel.style.display === 'flex') {
+            fetchPlayers().then(() => {
+                const list = document.getElementById('players-list');
+                list.innerHTML = allPlayers.map(p => `
+                    <li class="player-item" onclick="goToGrave('${p.id}', '${p.name}', ${p.progress})">
+                        ${p.name} [${p.progress}%]
+                    </li>`).join('');
+            });
+        }
+    }
+
+    window.goToGrave = (id, name, prog) => {
+        panel.style.display = 'none';
+        currentGrave.id = id;
+        currentGrave.name = name;
+        currentGrave.progress = prog;
+        document.getElementById('user-name').innerText = name;
+        document.getElementById('user-avatar').src = `https://ui-avatars.com/api/?name=${name}&background=random&color=fff`;
+        updateView();
+    };
+
+    function updateView() {
+        let prog = currentGrave.progress;
+        document.getElementById('percent').innerText = prog;
+        if (prog >= 100) bg.src = "100.png";
+        else if (prog >= 60) bg.src = "60.png";
+        else if (prog >= 40) bg.src = "40.png";
+        else if (prog >= 20) bg.src = "20.png";
+        else bg.src = "фон.png";
+    }
+
+    const handleAction = (e) => {
+        if (e.target.closest('#leaderboard-btn') || e.target.closest('#leaderboard-panel')) return;
+
+        digSound.currentTime = 0;
+        digSound.play().catch(()=>{});
+        shovel.src = "lap2.png";
+        setTimeout(() => { shovel.src = "lap1.png"; }, 300);
+
+        // Определяем: закапываем или раскапываем (логика качелей)
+        // Если прогресс < 100, копаем вглубь (+10). Если 100 — начинаем копать обратно.
+        // Но для мультиплеера проще сделать: всегда +10, пока не 100.
+        let change = 10;
+        if (currentGrave.progress >= 100) change = -10; 
+        
+        syncProgress(currentGrave.id, change);
+    };
+
+    // Управление лопатой
+    function moveShovel(x, y) {
         shovel.style.display = 'block';
         shovel.style.left = x + 'px';
         shovel.style.top = y + 'px';
     }
 
-    window.addEventListener('mousemove', (e) => updateShovelPos(e.clientX, e.clientY));
-    
-    window.addEventListener('touchstart', (e) => {
-        const touch = e.touches[0];
-        updateShovelPos(touch.clientX, touch.clientY);
+    document.addEventListener('mousemove', (e) => moveShovel(e.clientX, e.clientY));
+    document.addEventListener('touchstart', (e) => moveShovel(e.touches[0].clientX, e.touches[0].clientY));
+    document.addEventListener('touchmove', (e) => moveShovel(e.touches[0].clientX, e.touches[0].clientY), { passive: false });
+    document.addEventListener('mousedown', handleAction);
+    document.addEventListener('touchstart', (e) => {
+        if (!e.target.closest('#leaderboard-btn') && !e.target.closest('#leaderboard-panel')) handleAction(e);
     });
 
-    window.addEventListener('touchmove', (e) => {
-        const touch = e.touches[0];
-        updateShovelPos(touch.clientX, touch.clientY);
-    }, { passive: false });
+    // Начальная загрузка
+    goHome();
+    fetchPlayers();
+    // Обновляем список каждые 5 секунд, чтобы видеть, как тебя закапывают в реальном времени
+    setInterval(fetchPlayers, 5000);
 
-    // Клик со звуком
-    const handleAction = () => {
-        // Проигрываем звук
-        digSound.currentTime = 0; // Сбрасываем в начало, чтобы можно было быстро кликать
-        digSound.play().catch(e => console.log("Звук заблокирован до первого клика"));
-
-        shovel.src = "lap2.png";
-        setTimeout(() => { shovel.src = "lap1.png"; }, 400);
-
-        if (isDigging) {
-            progress += 10;
-            if (progress >= 100) { progress = 100; isDigging = false; }
-        } else {
-            progress -= 10;
-            if (progress <= 0) { progress = 0; isDigging = true; }
-        }
-        
-        percentText.innerText = progress;
-        updateBackground();
-    };
-
-    window.addEventListener('mousedown', handleAction);
-    window.addEventListener('touchstart', (e) => {
-        handleAction();
-    });
-
-    function updateBackground() {
-        if (progress >= 100) bg.src = "100.png";
-        else if (progress >= 60) bg.src = "60.png";
-        else if (progress >= 40) bg.src = "40.png";
-        else if (progress >= 20) bg.src = "20.png";
-        else bg.src = "фон.png";
-    }
 </script>
-
 </body>
 </html>
