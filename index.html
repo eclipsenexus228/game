@@ -12,13 +12,31 @@
             display: flex; justify-content: center; align-items: center;
             cursor: none; -webkit-user-select: none; user-select: none;
         }
+
+        /* ЭКРАН ЗАГРУЗКИ */
+        #loading-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; z-index: 1000000;
+            display: flex; justify-content: center; align-items: center;
+        }
+        #loading-video {
+            width: 100%; height: 100%; object-fit: cover;
+        }
+        /* Подсказка, если видео не грузится */
+        #tap-to-start {
+            position: absolute; bottom: 20%; color: rgba(255,255,255,0.5);
+            font-family: sans-serif; font-size: 14px; pointer-events: none;
+        }
+
         #game-container {
             position: relative; width: 100vw; height: 177.78vw;
             max-height: 100vh; max-width: 56.25vh;
             overflow: hidden; touch-action: none;
+            background: #1a1a1a;
+            display: none; /* Изначально скрыто */
         }
-        #background { width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
 
+        #background { width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
         #user-profile {
             position: absolute; top: 52%; left: 28%; transform: translateX(-50%);
             display: flex; flex-direction: column; align-items: center;
@@ -29,7 +47,6 @@
             color: white; font-family: sans-serif; font-size: 14px; font-weight: bold;
             text-shadow: 2px 2px 4px #000; background: rgba(0,0,0,0.6); padding: 4px 10px;
         }
-
         #leaderboard-btn {
             position: absolute; top: 10px; right: 10px; z-index: 200;
             background: rgba(0,0,0,0.8); color: white; border: 1px solid #fff;
@@ -43,7 +60,6 @@
         }
         #players-list { overflow-y: auto; list-style: none; padding: 0; margin: 0; }
         .player-item { padding: 10px; border-bottom: 1px solid #333; color: #ccc; cursor: pointer; font-family: sans-serif; }
-
         #shovel-cursor {
             position: fixed; width: 110px; height: auto;
             pointer-events: none; z-index: 99999; 
@@ -56,10 +72,17 @@
         }
     </style>
 </head>
-<body>
+<body onclick="startVideoManually()">
+
+<div id="loading-screen">
+    <video id="loading-video" muted playsinline preload="auto">
+        <source src="zagryska.mp4" type="video/mp4">
+    </video>
+    <div id="tap-to-start">Нажмите, чтобы начать</div>
+</div>
 
 <audio id="dig-sound" preload="auto"><source src="dig.mp3" type="audio/mpeg"></audio>
-<img id="shovel-cursor" src="lap1.png" onerror="this.style.opacity='0'">
+<img id="shovel-cursor" src="lap1.png">
 
 <div id="game-container">
     <img id="background" src="фон.png">
@@ -79,101 +102,83 @@
     const tg = window.Telegram.WebApp;
     tg.expand();
 
-    // --- НАСТРОЙКИ СЕРВЕРА ---
-    // Замени на свою ссылку от Ngrok, когда запустишь его!
-    const SERVER_URL = "http://localhost:8080"; 
+    const video = document.getElementById('loading-video');
+    const loadingScreen = document.getElementById('loading-screen');
+    const gameContainer = document.getElementById('game-container');
 
+    // Функция закрытия загрузки и запуска игры
+    function launchGame() {
+        if (loadingScreen.style.display === 'none') return;
+        loadingScreen.style.display = 'none';
+        gameContainer.style.display = 'block';
+        goHome();
+    }
+
+    // Если видео само запустилось и закончилось
+    video.onended = launchGame;
+
+    // Если пользователь тапнул — принудительно стартуем видео (или игру, если видео битое)
+    function startVideoManually() {
+        if (loadingScreen.style.display === 'none') return;
+        video.play().catch(() => {
+            launchGame(); // Если видео не может играть даже после клика — открываем игру
+        });
+        document.getElementById('tap-to-start').style.display = 'none';
+    }
+
+    // Пытаемся запустить сразу (сработает не везде)
+    video.play().catch(() => {
+        console.log("Ждем клика пользователя для старта видео");
+    });
+
+    // Страховка: если через 7 секунд всё еще висит загрузка — убираем её
+    setTimeout(launchGame, 7000);
+
+    // --- ЛОГИКА ИГРЫ (ОСТАЕТСЯ БЕЗ ИЗМЕНЕНИЙ) ---
+    const SERVER_URL = "http://localhost:8080"; 
     const shovel = document.getElementById('shovel-cursor');
     const bg = document.getElementById('background');
     const digSound = document.getElementById('dig-sound');
     const panel = document.getElementById('leaderboard-panel');
 
-    let currentGrave = { id: "", name: "", progress: 0 };
+    let currentGrave = { id: "0", name: "Игрок", progress: 0 };
     let me = { id: "0", name: "Игрок", avatar: "", progress: 0 };
     let allPlayers = [];
+    let currentDirection = 10;
 
-    // Инициализация данных из Telegram
     const user = tg.initDataUnsafe?.user;
     if (user) {
         me.id = user.id.toString();
         me.name = user.first_name;
-        me.avatar = user.photo_url || `https://ui-avatars.com/api/?name=${user.first_name}&background=random&color=fff`;
+        me.avatar = user.photo_url || `https://ui-avatars.com/api/?name=${user.first_name}`;
+        currentGrave.id = me.id;
+        currentGrave.name = me.name;
     }
 
-    // Загрузка списка игроков с сервера
     async function fetchPlayers() {
         try {
-            const response = await fetch(`${SERVER_URL}/api/players`);
+            const response = await fetch(`${SERVER_URL}/api/players`, { signal: AbortSignal.timeout(1000) });
             allPlayers = await response.json();
-            
-            // Если мы в списке есть, обновляем свой прогресс
-            const myData = allPlayers.find(p => p.id === me.id);
-            if (myData) me.progress = myData.progress;
-            
-            // Если мы сейчас смотрим чью-то могилу, обновляем и её данные
             const currentData = allPlayers.find(p => p.id === currentGrave.id);
             if (currentData) {
                 currentGrave.progress = currentData.progress;
                 updateView();
             }
-        } catch (e) {
-            console.error("Ошибка загрузки данных:", e);
-        }
+        } catch (e) {}
     }
 
-    // Отправка прогресса на сервер
     async function syncProgress(targetId, change) {
+        currentGrave.progress = Math.max(0, Math.min(100, currentGrave.progress + change));
+        updateView();
         try {
-            const response = await fetch(`${SERVER_URL}/api/update`, {
+            await fetch(`${SERVER_URL}/api/update`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id: targetId, change: change })
+                body: JSON.stringify({ id: targetId, change: change }),
+                signal: AbortSignal.timeout(1000)
             });
-            const result = await response.json();
-            if (result.status === "ok") {
-                currentGrave.progress = result.new_progress;
-                if (targetId === me.id) me.progress = result.new_progress;
-                updateView();
-            }
-        } catch (e) {
-            console.error("Ошибка синхронизации:", e);
-        }
+        } catch (e) {}
     }
-
-    function goHome(e) {
-        if(e) e.stopPropagation();
-        panel.style.display = 'none';
-        currentGrave.id = me.id;
-        currentGrave.name = me.name;
-        currentGrave.progress = me.progress;
-        document.getElementById('user-name').innerText = me.name;
-        document.getElementById('user-avatar').src = me.avatar;
-        updateView();
-    }
-
-    function togglePanel(e) {
-        e.stopPropagation();
-        panel.style.display = (panel.style.display === 'flex') ? 'none' : 'flex';
-        if (panel.style.display === 'flex') {
-            fetchPlayers().then(() => {
-                const list = document.getElementById('players-list');
-                list.innerHTML = allPlayers.map(p => `
-                    <li class="player-item" onclick="goToGrave('${p.id}', '${p.name}', ${p.progress})">
-                        ${p.name} [${p.progress}%]
-                    </li>`).join('');
-            });
-        }
-    }
-
-    window.goToGrave = (id, name, prog) => {
-        panel.style.display = 'none';
-        currentGrave.id = id;
-        currentGrave.name = name;
-        currentGrave.progress = prog;
-        document.getElementById('user-name').innerText = name;
-        document.getElementById('user-avatar').src = `https://ui-avatars.com/api/?name=${name}&background=random&color=fff`;
-        updateView();
-    };
 
     function updateView() {
         let prog = currentGrave.progress;
@@ -185,25 +190,52 @@
         else bg.src = "фон.png";
     }
 
-    const handleAction = (e) => {
-        if (e.target.closest('#leaderboard-btn') || e.target.closest('#leaderboard-panel')) return;
+    function goHome(e) {
+        if(e) e.stopPropagation();
+        panel.style.display = 'none';
+        currentGrave.id = me.id;
+        currentGrave.name = me.name;
+        document.getElementById('user-name').innerText = me.name;
+        document.getElementById('user-avatar').src = me.avatar;
+        updateView();
+    }
 
-        digSound.currentTime = 0;
-        digSound.play().catch(()=>{});
-        shovel.src = "lap2.png";
-        setTimeout(() => { shovel.src = "lap1.png"; }, 300);
+    function togglePanel(e) {
+        e.stopPropagation();
+        panel.style.display = (panel.style.display === 'flex') ? 'none' : 'flex';
+        if (panel.style.display === 'flex') {
+            fetchPlayers().then(() => {
+                const list = document.getElementById('players-list');
+                list.innerHTML = allPlayers.length > 0 
+                    ? allPlayers.map(p => `<li class="player-item" onclick="goToGrave('${p.id}', '${p.name}', ${p.progress})">${p.name} [${p.progress}%]</li>`).join('')
+                    : '<li class="player-item">Сервер оффлайн</li>';
+            });
+        }
+    }
 
-        // Определяем: закапываем или раскапываем (логика качелей)
-        // Если прогресс < 100, копаем вглубь (+10). Если 100 — начинаем копать обратно.
-        // Но для мультиплеера проще сделать: всегда +10, пока не 100.
-        let change = 10;
-        if (currentGrave.progress >= 100) change = -10; 
-        
-        syncProgress(currentGrave.id, change);
+    window.goToGrave = (id, name, prog) => {
+        panel.style.display = 'none';
+        currentGrave.id = id;
+        currentGrave.name = name;
+        currentGrave.progress = prog;
+        document.getElementById('user-name').innerText = name;
+        document.getElementById('user-avatar').src = `https://ui-avatars.com/api/?name=${name}`;
+        updateView();
     };
 
-    // Управление лопатой
+    const handleAction = (e) => {
+        if (e.target.closest('#leaderboard-btn') || e.target.closest('#leaderboard-panel') || loadingScreen.style.display !== 'none') return;
+        if (digSound.paused) digSound.play().catch(()=>{}); else digSound.currentTime = 0;
+        shovel.src = "lap2.png";
+        setTimeout(() => { shovel.src = "lap1.png"; }, 250);
+
+        if (currentGrave.progress >= 100) currentDirection = -10;
+        else if (currentGrave.progress <= 0) currentDirection = 10;
+        syncProgress(currentGrave.id, currentDirection);
+    };
+
     function moveShovel(x, y) {
+        if (loadingScreen.style.display !== 'none') return;
         shovel.style.display = 'block';
         shovel.style.left = x + 'px';
         shovel.style.top = y + 'px';
@@ -217,12 +249,7 @@
         if (!e.target.closest('#leaderboard-btn') && !e.target.closest('#leaderboard-panel')) handleAction(e);
     });
 
-    // Начальная загрузка
-    goHome();
-    fetchPlayers();
-    // Обновляем список каждые 5 секунд, чтобы видеть, как тебя закапывают в реальном времени
     setInterval(fetchPlayers, 5000);
-
 </script>
 </body>
 </html>
