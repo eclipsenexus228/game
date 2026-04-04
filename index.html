@@ -25,11 +25,10 @@
             object-fit: cover; pointer-events: none;
         }
 
-        /* ОБНОВЛЕННЫЙ БЛОК ПРОФИЛЯ (КВАДРАТНЫЙ И ЛЕВЕЕ) */
         #user-profile {
             position: absolute;
-            top: 47%; /* Высота под камнем */
-            left: 35%; /* Сместили левее (было 50%) */
+            top: 52%; 
+            left: 28%; 
             transform: translateX(-50%);
             display: flex;
             flex-direction: column;
@@ -40,31 +39,32 @@
         }
 
         #user-avatar {
-            width: 65px; /* Сделали больше */
-            height: 65px; /* Сделали больше */
-            border-radius: 8px; /* Легкое скругление углов, но форма - КВАДРАТ */
-            border: 3px solid rgba(255, 255, 255, 0.8);
+            width: 70px;
+            height: 70px;
+            border-radius: 0px;
+            border: 3px solid #fff;
             background: #222;
             object-fit: cover;
-            box-shadow: 0 0 15px rgba(0,0,0,0.5);
+            box-shadow: 0 0 20px rgba(0,0,0,0.8);
         }
 
         #user-name {
             color: white;
             font-family: sans-serif;
-            font-size: 16px; /* Имя тоже чуть крупнее */
+            font-size: 15px;
             font-weight: bold;
             text-shadow: 2px 2px 4px rgba(0,0,0,1);
-            background: rgba(0,0,0,0.5);
-            padding: 3px 10px;
-            border-radius: 4px;
+            background: rgba(0,0,0,0.6);
+            padding: 4px 10px;
             white-space: nowrap;
         }
 
         #shovel-cursor {
             position: fixed;
-            width: 110px; height: auto;
-            pointer-events: none; z-index: 9999;
+            width: 110px;
+            height: auto;
+            pointer-events: none;
+            z-index: 9999;
             transform: translate(-20%, -80%) rotate(-10deg);
             display: none;
         }
@@ -78,6 +78,8 @@
     </style>
 </head>
 <body>
+
+<audio id="dig-sound" src="dig.mp3" preload="auto"></audio>
 
 <img id="shovel-cursor" src="lap1.png" alt="shovel">
 
@@ -99,14 +101,14 @@
     const user = tg.initDataUnsafe?.user;
     const avatarImg = document.getElementById('user-avatar');
     const nameSpan = document.getElementById('user-name');
+    const digSound = document.getElementById('dig-sound');
 
     if (user) {
         nameSpan.innerText = user.first_name;
-        // Загружаем фото профиля или заглушку
-        avatarImg.src = user.photo_url || `https://ui-avatars.com/api/?name=${user.first_name}&background=random&color=fff&size=128`;
+        avatarImg.src = user.photo_url || `https://ui-avatars.com/api/?name=${user.first_name}&background=random&color=fff&size=150`;
     } else {
         nameSpan.innerText = "Игрок";
-        avatarImg.src = `https://ui-avatars.com/api/?name=P&background=333&color=fff&size=128`;
+        avatarImg.src = `https://ui-avatars.com/api/?name=P&background=333&color=fff&size=150`;
     }
 
     let progress = 0;
@@ -121,13 +123,24 @@
         shovel.style.top = y + 'px';
     }
 
-    document.addEventListener('mousemove', (e) => updateShovelPos(e.clientX, e.clientY));
-    document.addEventListener('touchmove', (e) => {
+    window.addEventListener('mousemove', (e) => updateShovelPos(e.clientX, e.clientY));
+    
+    window.addEventListener('touchstart', (e) => {
+        const touch = e.touches[0];
+        updateShovelPos(touch.clientX, touch.clientY);
+    });
+
+    window.addEventListener('touchmove', (e) => {
         const touch = e.touches[0];
         updateShovelPos(touch.clientX, touch.clientY);
     }, { passive: false });
 
+    // Клик со звуком
     const handleAction = () => {
+        // Проигрываем звук
+        digSound.currentTime = 0; // Сбрасываем в начало, чтобы можно было быстро кликать
+        digSound.play().catch(e => console.log("Звук заблокирован до первого клика"));
+
         shovel.src = "lap2.png";
         setTimeout(() => { shovel.src = "lap1.png"; }, 400);
 
@@ -143,10 +156,8 @@
         updateBackground();
     };
 
-    document.addEventListener('mousedown', handleAction);
-    document.addEventListener('touchstart', (e) => {
-        const touch = e.touches[0];
-        updateShovelPos(touch.clientX, touch.clientY);
+    window.addEventListener('mousedown', handleAction);
+    window.addEventListener('touchstart', (e) => {
         handleAction();
     });
 
