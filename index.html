@@ -12,37 +12,28 @@
             display: flex; justify-content: center; align-items: center;
         }
 
-        /* КОНТЕЙНЕР 9:16 */
-        #main-container {
+        .game-viewport {
             position: relative;
-            width: 100vw; height: 177.78vw;
+            width: 100vw; height: 177.78vw; 
             max-height: 100vh; max-width: 56.25vh;
             background: #111; overflow: hidden;
         }
 
-        /* ВИДЕО СЛОЙ */
-        #loading-layer {
+        /* ЭКРАН ЗАГРУЗКИ */
+        #loading-screen {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 1000; background: #000;
+            z-index: 10000; background: #000;
             display: flex; justify-content: center; align-items: center;
+            transition: opacity 0.5s ease; /* Плавное исчезновение */
         }
         #loading-video { width: 100%; height: 100%; object-fit: cover; }
 
-        /* КНОПКА ПЕРЕХОДА */
-        #start-btn {
-            position: absolute; bottom: 15%; left: 50%; transform: translateX(-50%);
-            padding: 15px 35px; background: #fff; color: #000;
-            border: none; border-radius: 30px; font-weight: bold;
-            font-family: sans-serif; font-size: 16px; cursor: pointer;
-            z-index: 1001; display: none; /* Появится после видео */
-            box-shadow: 0 5px 15px rgba(255,255,255,0.3);
+        /* ИГРА */
+        #game-container {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: block; /* Она всегда там, под видео */
         }
 
-        /* ИГРОВОЙ СЛОЙ */
-        #game-layer {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            display: block; /* Изначально под видео */
-        }
         #background { width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
         
         #user-profile {
@@ -57,26 +48,23 @@
 
         #shovel-cursor {
             position: fixed; width: 100px; height: auto;
-            pointer-events: none; z-index: 2000; transform: translate(-20%, -80%);
+            pointer-events: none; z-index: 30000; transform: translate(-20%, -80%);
             display: none;
         }
         #info {
-            position: absolute; top: 10px; left: 15px; color: #fff; font-family: monospace;
+            position: absolute; top: 10px; left: 15px; color: #fff; font-family: monospace; z-index: 10;
         }
     </style>
 </head>
-<body>
-
-<div id="main-container">
-    <div id="loading-layer">
+<body onclick="forceStart()"> <div class="game-viewport">
+    <div id="loading-screen">
         <video id="loading-video" muted playsinline webkit-playsinline autoplay preload="auto">
             <source src="zagryska.mp4" type="video/mp4">
         </video>
-        <button id="start-btn" onclick="closeLoader()">ВОЙТИ В ИГРУ</button>
     </div>
 
-    <div id="game-layer">
-        <img id="background" src="фон.png">
+    <div id="game-container">
+        <img id="background" src="photo/1.png">
         <div id="user-profile">
             <img id="user-avatar" src="">
             <span id="user-name">...</span>
@@ -93,81 +81,91 @@
     tg.expand();
 
     const video = document.getElementById('loading-video');
-    const startBtn = document.getElementById('start-btn');
-    const loader = document.getElementById('loading-layer');
+    const loader = document.getElementById('loading-screen');
     const shovel = document.getElementById('shovel-cursor');
     const bg = document.getElementById('background');
     const digSound = document.getElementById('dig-sound');
 
     let progress = 0;
-    let dir = 10;
-    let active = false;
+    let step = 2; 
+    let dir = step; 
+    let isPlaying = false;
 
-    // 1. УПРАВЛЕНИЕ ЗАГРУЗКОЙ
-    function showBtn() {
-        startBtn.style.display = 'block';
+    // --- ФУНКЦИЯ ВХОДА ---
+    function launchGame() {
+        if (isPlaying) return;
+        isPlaying = true;
+        loader.style.opacity = '0';
+        setTimeout(() => { loader.style.display = 'none'; }, 500);
+        initUser();
     }
 
-    video.onended = showBtn;
-    
-    // Страховка: если видео не прогрузилось за 2 секунды - даем кнопку
-    setTimeout(() => {
-        if (startBtn.style.display !== 'block') showBtn();
-    }, 2000);
+    // События видео
+    video.onended = launchGame;
+    video.onerror = launchGame;
 
-    function closeLoader() {
-        loader.style.display = 'none';
-        active = true;
-        init();
-    }
-
-    // 2. ЛОГИКА ИГРЫ
-    function init() {
-        const u = tg.initDataUnsafe?.user;
-        if (u) {
-            document.getElementById('user-name').innerText = u.first_name;
-            document.getElementById('user-avatar').src = u.photo_url || `https://ui-avatars.com/api/?name=${u.first_name}`;
+    // Страховка №1: Если видео идет, следим за временем
+    video.ontimeupdate = function() {
+        if (video.duration > 0 && video.currentTime >= video.duration - 0.2) {
+            launchGame();
         }
-        update();
+    };
+
+    // Страховка №2: Если всё зависло на 5 секунд
+    setTimeout(launchGame, 5000);
+
+    // Страховка №3: Если пользователь сам тапнул по черному экрану
+    function forceStart() {
+        if (!isPlaying) launchGame();
     }
 
-    function update() {
+    // --- ЛОГИКА ИГРЫ ---
+    function initUser() {
+        const user = tg.initDataUnsafe?.user;
+        if (user) {
+            document.getElementById('user-name').innerText = user.first_name;
+            document.getElementById('user-avatar').src = user.photo_url || `https://ui-avatars.com/api/?name=${user.first_name}`;
+        }
+        updateArt();
+    }
+
+    function updateArt() {
         document.getElementById('percent').innerText = progress;
-        if (progress >= 100) bg.src = "100.png";
-        else if (progress >= 60) bg.src = "60.png";
-        else if (progress >= 40) bg.src = "40.png";
-        else if (progress >= 20) bg.src = "20.png";
-        else bg.src = "фон.png";
+        let n = 1;
+        if (progress >= 100) n = 8;
+        else if (progress >= 85) n = 7;
+        else if (progress >= 70) n = 6;
+        else if (progress >= 55) n = 5;
+        else if (progress >= 40) n = 4;
+        else if (progress >= 25) n = 3;
+        else if (progress >= 10) n = 2;
+        else n = 1;
+        bg.src = `photo/${n}.png`;
     }
 
-    function dig() {
-        if (!active) return;
+    function doDig() {
+        if (!isPlaying) return;
         digSound.currentTime = 0;
         digSound.play().catch(()=>{});
-        
         shovel.src = "lap2.png";
-        setTimeout(() => shovel.src = "lap1.png", 150);
-
-        if (progress >= 100) dir = -10;
-        else if (progress <= 0) dir = 10;
-        
+        setTimeout(() => { shovel.src = "lap1.png"; }, 150);
+        if (progress >= 100) dir = -step;
+        else if (progress <= 0) dir = step;
         progress = Math.max(0, Math.min(100, progress + dir));
-        update();
+        updateArt();
     }
 
-    // КЛИКИ И ТАПЫ
-    document.addEventListener('mousedown', dig);
+    document.addEventListener('mousedown', (e) => { if (isPlaying) doDig(); });
     document.addEventListener('touchstart', (e) => {
-        if (!active) return;
+        if (!isPlaying) return;
         const t = e.touches[0];
         shovel.style.display = 'block';
         shovel.style.left = t.clientX + 'px';
         shovel.style.top = t.clientY + 'px';
-        dig();
+        doDig();
     });
-
     document.addEventListener('mousemove', (e) => {
-        if (!active) return;
+        if (!isPlaying) return;
         shovel.style.display = 'block';
         shovel.style.left = e.clientX + 'px';
         shovel.style.top = e.clientY + 'px';
