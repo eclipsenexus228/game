@@ -1,62 +1,150 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="uk">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Grave Game</title>
+    <title>Grave Game Online</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         body, html {
             margin: 0; padding: 0; width: 100%; height: 100%;
             overflow: hidden; background-color: #000;
             display: flex; justify-content: center; align-items: center;
+            font-family: sans-serif; -webkit-user-select: none; user-select: none;
         }
 
         .game-viewport {
             position: relative;
             width: 100vw; height: 177.78vw; 
             max-height: 100vh; max-width: 56.25vh;
-            background: #111; overflow: hidden;
+            background: #000; overflow: hidden;
         }
 
-        /* ЭКРАН ЗАГРУЗКИ */
+        #entry-btn {
+            position: absolute; 
+            bottom: 20%; 
+            left: 50%; 
+            transform: translateX(-50%);
+            padding: 18px 45px; 
+            background: #ffffff; 
+            color: #000000;
+            border: none; 
+            border-radius: 40px; 
+            font-weight: 900;
+            font-size: 20px; 
+            cursor: pointer;
+            z-index: 999999 !important; 
+            display: none; 
+            box-shadow: 0 0 30px rgba(255,255,255,0.6);
+            text-transform: uppercase;
+        }
+
         #loading-screen {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 10000; background: #000;
-            display: flex; justify-content: center; align-items: center;
-            transition: opacity 0.5s ease; /* Плавное исчезновение */
+            z-index: 500; background: #000;
         }
-        #loading-video { width: 100%; height: 100%; object-fit: cover; }
+        
+        #loading-video { 
+            width: 100%; height: 100%; object-fit: cover; 
+            pointer-events: none; 
+        }
 
-        /* ИГРА */
         #game-container {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            display: block; /* Она всегда там, под видео */
+            display: none; z-index: 10;
         }
 
         #background { width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
         
         #user-profile {
             position: absolute; top: 52%; left: 28%; transform: translateX(-50%);
-            display: flex; flex-direction: column; align-items: center;
+            display: flex; flex-direction: column; align-items: center; z-index: 100;
         }
         #user-avatar { width: 65px; height: 65px; border: 2px solid #fff; background: #222; object-fit: cover; }
         #user-name {
-            color: white; font-family: sans-serif; font-size: 13px; font-weight: bold; margin-top: 5px;
+            color: white; font-size: 13px; font-weight: bold; margin-top: 5px;
             text-shadow: 2px 2px 4px #000; background: rgba(0,0,0,0.6); padding: 3px 8px;
         }
 
         #shovel-cursor {
             position: fixed; width: 100px; height: auto;
-            pointer-events: none; z-index: 30000; transform: translate(-20%, -80%);
-            display: none;
+            pointer-events: none; z-index: 30000; 
+            transform: translate(-20%, -80%); display: none;
         }
+
         #info {
-            position: absolute; top: 10px; left: 15px; color: #fff; font-family: monospace; z-index: 10;
+            position: absolute; top: 15px; left: 15px;
+            color: #fff; font-family: monospace; font-size: 14px;
+            background: rgba(0,0,0,0.5); padding: 4px 8px; z-index: 50;
+        }
+
+        /* --- МАГАЗИН В ТВОЕМ СТИЛЕ --- */
+        #shop-ui {
+            position: absolute; top: 10px; right: 10px;
+            display: none; flex-direction: column; align-items: flex-end; gap: 8px; z-index: 1001;
+        }
+        .btn-open-shop { background: gold; color: black; border: none; padding: 10px; border-radius: 10px; font-weight: bold; }
+        .balance { color: white; background: rgba(0,0,0,0.5); padding: 5px; border-radius: 5px; font-size: 12px; }
+
+        #shop-modal {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 95%; height: 90%; background: #111; border: 4px solid gold; border-radius: 20px;
+            display: none; flex-direction: column; z-index: 40000; color: white; padding: 15px;
+        }
+
+        /* Кнопки вкладок */
+        .shop-tabs {
+            display: flex; gap: 5px; margin-bottom: 10px; overflow-x: auto; padding-bottom: 5px;
+        }
+        .tab-btn {
+            background: #222; color: gold; border: 1px solid gold; padding: 10px; 
+            border-radius: 10px; font-weight: bold; font-size: 11px; min-width: 85px;
+        }
+        .tab-btn.active { background: gold; color: #000; }
+
+        .shop-grid { display: grid; grid-template-columns: 1fr; gap: 30px; overflow-y: auto; margin-top: 10px; }
+        .shop-item { background: #222; padding: 30px; border-radius: 20px; text-align: center; border: 2px solid #444; }
+        .shop-item img { width: 300px; height: 300px; object-fit: contain; }
+        .shop-item button { width: 100%; background: gold; border: none; padding: 20px; margin-top: 15px; font-weight: bold; font-size: 24px; color: black; border-radius: 15px; }
+
+        #placed-grave {
+            position: absolute; 
+            top: 20%; 
+            left: -20%; 
+            width: 440px; 
+            z-index: 45; 
+            display: none; 
+            pointer-events: none;
+            filter: drop-shadow(0 15px 30px rgba(0,0,0,0.7));
         }
     </style>
 </head>
-<body onclick="forceStart()"> <div class="game-viewport">
+<body>
+
+<div class="game-viewport">
+    <button id="entry-btn" onclick="startGame()">Почати гру</button>
+
+    <div id="shop-ui">
+        <button class="btn-open-shop" onclick="toggleShop(true)">МАГАЗИН</button>
+        <div class="balance">💀 <span id="skulls-val">100</span></div>
+    </div>
+
+    <div id="shop-modal">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 10px;">
+            <b style="font-size: 30px; color: gold;">МАГАЗИН</b>
+            <button onclick="toggleShop(false)" style="background:none; border:none; color:gold; font-size:45px;">✕</button>
+        </div>
+        
+        <div class="shop-tabs">
+            <button class="tab-btn active" onclick="switchTab('nadgrobki', this)">Надгробки</button>
+            <button class="tab-btn" onclick="switchTab('lopaty', this)">Лопати</button>
+            <button class="tab-btn" onclick="switchTab('groby', this)">Гроби</button>
+            <button class="tab-btn" onclick="switchTab('zabory', this)">Забори</button>
+        </div>
+
+        <div class="shop-grid" id="shop-items"></div>
+    </div>
+
     <div id="loading-screen">
         <video id="loading-video" muted playsinline webkit-playsinline autoplay preload="auto">
             <source src="zagryska.mp4" type="video/mp4">
@@ -64,6 +152,7 @@
     </div>
 
     <div id="game-container">
+        <img id="placed-grave" src="">
         <img id="background" src="photo/1.png">
         <div id="user-profile">
             <img id="user-avatar" src="">
@@ -81,45 +170,88 @@
     tg.expand();
 
     const video = document.getElementById('loading-video');
+    const entryBtn = document.getElementById('entry-btn');
     const loader = document.getElementById('loading-screen');
+    const gameContainer = document.getElementById('game-container');
     const shovel = document.getElementById('shovel-cursor');
     const bg = document.getElementById('background');
     const digSound = document.getElementById('dig-sound');
 
     let progress = 0;
-    let step = 2; 
+    let step = 4; 
     let dir = step; 
     let isPlaying = false;
+    let lastClickTime = 0;
+    let skulls = 100;
+    let currentTab = 'nadgrobki';
 
-    // --- ФУНКЦИЯ ВХОДА ---
-    function launchGame() {
-        if (isPlaying) return;
+    const database = {
+        nadgrobki: [
+            { id: 1, price: 35, src: 'photo/g1.png' },
+            { id: 2, price: 40, src: 'photo/g2.png' },
+            { id: 3, price: 50, src: 'photo/g3.png' },
+            { id: 4, price: 100, src: 'photo/g4.png' }
+        ],
+        lopaty: [], 
+        groby: [], 
+        zabory: []
+    };
+
+    function showButton() { entryBtn.style.display = 'block'; }
+    video.onended = showButton;
+    video.ontimeupdate = function() { if (video.duration > 0 && video.currentTime >= video.duration - 0.5) showButton(); };
+    setTimeout(showButton, 4000);
+
+    function startGame() {
+        loader.style.display = 'none';
+        entryBtn.style.display = 'none';
+        gameContainer.style.display = 'block';
+        document.getElementById('shop-ui').style.display = 'flex';
         isPlaying = true;
-        loader.style.opacity = '0';
-        setTimeout(() => { loader.style.display = 'none'; }, 500);
         initUser();
     }
 
-    // События видео
-    video.onended = launchGame;
-    video.onerror = launchGame;
-
-    // Страховка №1: Если видео идет, следим за временем
-    video.ontimeupdate = function() {
-        if (video.duration > 0 && video.currentTime >= video.duration - 0.2) {
-            launchGame();
-        }
-    };
-
-    // Страховка №2: Если всё зависло на 5 секунд
-    setTimeout(launchGame, 5000);
-
-    // Страховка №3: Если пользователь сам тапнул по черному экрану
-    function forceStart() {
-        if (!isPlaying) launchGame();
+    function toggleShop(show) {
+        const modal = document.getElementById('shop-modal');
+        modal.style.display = show ? 'flex' : 'none';
+        if(show) renderShop();
     }
 
-    // --- ЛОГИКА ИГРЫ ---
+    function switchTab(tab, btn) {
+        currentTab = tab;
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        renderShop();
+    }
+
+    function renderShop() {
+        const container = document.getElementById('shop-items');
+        container.innerHTML = '';
+        const items = database[currentTab] || [];
+        if(items.length === 0) {
+            container.innerHTML = '<div style="text-align:center; padding:20px; font-size:20px;">Порожньо</div>';
+            return;
+        }
+        items.forEach(item => {
+            container.innerHTML += `<div class="shop-item"><img src="${item.src}"><button onclick="buyItem(${item.id})">${item.price} 💀</button></div>`;
+        });
+    }
+
+    function buyItem(id) {
+        const item = database[currentTab].find(i => i.id === id);
+        if (skulls >= item.price) {
+            skulls -= item.price;
+            document.getElementById('skulls-val').innerText = skulls;
+            if (currentTab === 'nadgrobki') {
+                const pg = document.getElementById('placed-grave');
+                pg.src = item.src;
+                pg.style.display = 'block';
+            }
+            toggleShop(false);
+            tg.HapticFeedback.notificationOccurred('success');
+        } else { tg.showAlert("Не вистачає черепків!"); }
+    }
+
     function initUser() {
         const user = tg.initDataUnsafe?.user;
         if (user) {
@@ -144,33 +276,47 @@
     }
 
     function doDig() {
-        if (!isPlaying) return;
+        if (!isPlaying || document.getElementById('shop-modal').style.display === 'flex') return;
+        const now = Date.now();
+        if (now - lastClickTime < 100) return; 
+        lastClickTime = now;
         digSound.currentTime = 0;
         digSound.play().catch(()=>{});
         shovel.src = "lap2.png";
-        setTimeout(() => { shovel.src = "lap1.png"; }, 150);
+        setTimeout(() => { shovel.src = "lap1.png"; }, 120);
         if (progress >= 100) dir = -step;
         else if (progress <= 0) dir = step;
         progress = Math.max(0, Math.min(100, progress + dir));
         updateArt();
     }
 
-    document.addEventListener('mousedown', (e) => { if (isPlaying) doDig(); });
     document.addEventListener('touchstart', (e) => {
-        if (!isPlaying) return;
-        const t = e.touches[0];
-        shovel.style.display = 'block';
-        shovel.style.left = t.clientX + 'px';
-        shovel.style.top = t.clientY + 'px';
-        doDig();
-    });
-    document.addEventListener('mousemove', (e) => {
-        if (!isPlaying) return;
-        shovel.style.display = 'block';
-        shovel.style.left = e.clientX + 'px';
-        shovel.style.top = e.clientY + 'px';
-    });
+        if (!isPlaying) { if (e.target.id !== 'entry-btn') return; } 
+        else {
+            if (e.target.closest('#shop-modal') || e.target.closest('#shop-ui')) return;
+            if (e.cancelable) e.preventDefault(); 
+            const t = e.touches[0];
+            shovel.style.display = 'block';
+            shovel.style.left = t.clientX + 'px';
+            shovel.style.top = t.clientY + 'px';
+            doDig();
+        }
+    }, { passive: false });
 
+    document.addEventListener('mousedown', (e) => { if (isPlaying && window.matchMedia("(pointer: fine)").matches) doDig(); });
+
+    const moveHandler = (e) => {
+        if (!isPlaying) return;
+        const x = e.clientX || (e.touches && e.touches[0].clientX);
+        const y = e.clientY || (e.touches && e.touches[0].clientY);
+        if (x && y) {
+            shovel.style.display = 'block';
+            shovel.style.left = x + 'px';
+            shovel.style.top = y + 'px';
+        }
+    };
+    document.addEventListener('mousemove', moveHandler);
+    document.addEventListener('touchmove', moveHandler, { passive: true });
 </script>
 </body>
 </html>
