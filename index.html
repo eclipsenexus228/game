@@ -6,6 +6,7 @@
     <title>Grave Game Online</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
+        /* БАЗОВЫЕ СТИЛИ (Из "Лучшего") */
         body, html {
             margin: 0; padding: 0; width: 100%; height: 100%;
             overflow: hidden; background-color: #000;
@@ -19,39 +20,53 @@
             background: #000; overflow: hidden;
         }
 
+        /* КНОПКИ */
         #entry-btn {
             position: absolute; bottom: 20%; left: 50%; transform: translateX(-50%);
             padding: 18px 45px; background: #fff; color: #000;
             border: none; border-radius: 40px; font-weight: 900;
-            font-size: 20px; cursor: pointer; z-index: 999999;
+            font-size: 20px; cursor: pointer; z-index: 999;
             display: none; box-shadow: 0 0 30px rgba(255,255,255,0.6);
         }
         #home-btn {
             position: absolute; bottom: 10%; left: 50%; transform: translateX(-50%);
             padding: 15px 30px; background: #28a745; color: white;
             border: 2px solid #fff; border-radius: 40px; font-weight: bold;
-            display: none; z-index: 2001; cursor: pointer;
+            display: none; z-index: 2001; cursor: pointer; text-transform: uppercase;
         }
 
+        /* ЗАГРУЗКА */
         #loading-screen {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             z-index: 500; background: #000;
         }
         #loading-video { width: 100%; height: 100%; object-fit: cover; }
 
+        /* ИГРА */
         #game-container {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             display: none; z-index: 10;
         }
         #background { width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
 
+        /* ОБЪЕКТЫ НА ТРАВЕ */
         #placed-grave {
             position: absolute; top: 21%; left: 18%; 
             transform: translateX(-50%); width: 350px; 
             z-index: 45; display: none; pointer-events: none;
             filter: drop-shadow(0 15px 30px rgba(0,0,0,0.7));
         }
+        
+        /* НОВОЕ: ПОЗИЦИЯ ФЛАГА (СПРАВА) */
+        #placed-flag {
+            position: absolute; top: 21%; right: 18%; 
+            transform: translateX(50%); width: 200px; /* Флаг чуть меньше надгробия */
+            z-index: 44; /* Чуть позади надгробия, если наложатся */
+            display: none; pointer-events: none;
+            filter: drop-shadow(0 10px 20px rgba(0,0,0,0.5));
+        }
 
+        /* ПРОФИЛЬ */
         #user-profile {
             position: absolute; top: 52%; left: 28%; transform: translateX(-50%);
             display: flex; flex-direction: column; align-items: center; z-index: 100;
@@ -63,6 +78,7 @@
             text-align: center; min-width: 50px;
         }
 
+        /* МАГАЗИН И СПИСОК */
         #shop-ui, #players-list-ui { position: absolute; right: 10px; display: none; flex-direction: column; align-items: flex-end; gap: 8px; z-index: 1001; }
         #shop-ui { top: 10px; }
         #players-list-ui { top: 120px; }
@@ -70,6 +86,7 @@
         .btn-open-players { background: #4a90e2; color: white; border: none; padding: 10px; border-radius: 10px; font-weight: bold; cursor: pointer;}
         .balance { color: white; background: rgba(0,0,0,0.5); padding: 5px; border-radius: 5px; font-size: 14px; font-weight: bold; }
 
+        /* МОДАЛКА ИГРОКОВ */
         #players-modal {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
             width: 85%; max-width: 300px; background: rgba(20, 20, 20, 0.98); 
@@ -79,9 +96,32 @@
         #search-player { width: 100%; padding: 10px; margin-bottom: 15px; background: #333; color: white; border: 1px solid #555; box-sizing: border-box;}
         .player-item { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #333; cursor: pointer;}
 
+        /* НОВОЕ: МОДАЛКА ВЫБОРА РАСЫ (ФЛАГА) */
+        #race-modal {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.9); /* Почти черное затемнение */
+            display: none; flex-direction: column; justify-content: center; align-items: center;
+            z-index: 5000; color: white;
+        }
+        #race-modal h2 { color: gold; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 30px; text-shadow: 0 0 15px gold; }
+        .race-options { display: flex; gap: 30px; }
+        .race-btn {
+            background: none; border: 3px solid #555; border-radius: 15px;
+            padding: 10px; cursor: pointer; transition: all 0.3s ease;
+            display: flex; flex-direction: column; align-items: center; gap: 10px;
+        }
+        .race-btn img { width: 120px; height: auto; border-radius: 8px; }
+        .race-btn span { font-weight: bold; font-size: 16px; color: #aaa; }
+        
+        /* Эффект при наведении/выборе */
+        .race-btn:hover, .race-btn.selected { border-color: gold; box-shadow: 0 0 20px rgba(255,215,0,0.5); transform: scale(1.05); }
+        .race-btn:hover span, .race-btn.selected span { color: gold; }
+
+        /* ЛОПАТА И ИНФО */
         #shovel-cursor { position: fixed; width: 100px; height: auto; pointer-events: none; z-index: 30000; transform: translate(-20%, -80%); display: none; }
         #info { position: absolute; top: 15px; left: 15px; color: #fff; background: rgba(0,0,0,0.5); padding: 4px 8px; z-index: 50; font-family: monospace;}
         
+        /* БОНУС */
         .bonus-text {
             position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%);
             color: gold; font-size: 40px; font-weight: bold; z-index: 5000;
@@ -112,6 +152,21 @@
         <button class="close-modal" onclick="togglePlayersModal(false)" style="width:100%; padding:10px; margin-top:10px; background:#cc3333; color:white; border:none; border-radius:8px; cursor: pointer;">ЗАКРИТИ</button>
     </div>
 
+    <div id="race-modal">
+        <h2>ОБЕРИ СВІЙ ПРАПОР</h2>
+        <div class="race-options">
+            <button class="race-btn" onclick="selectRace('photo/flag1.png')">
+                <img src="photo/flag1.png" alt="Прапор 1">
+                <span>РАСА 1</span>
+            </button>
+            <button class="race-btn" onclick="selectRace('photo/flag2.png')">
+                <img src="photo/flag2.png" alt="Прапор 2">
+                <span>РАСА 2</span>
+            </button>
+        </div>
+        <p style="color: #666; margin-top: 40px; font-size: 12px;">Цей вибір робиться один раз</p>
+    </div>
+
     <div id="loading-screen">
         <video id="loading-video" muted playsinline webkit-playsinline autoplay preload="auto">
             <source src="zagryska.mp4" type="video/mp4">
@@ -120,6 +175,8 @@
 
     <div id="game-container">
         <img id="placed-grave" src=""> 
+        <img id="placed-flag" src=""> 
+        
         <img id="background" src="photo/1.png"> 
         <div id="user-profile">
             <img id="user-avatar" src="">
@@ -142,7 +199,9 @@
     const shovel = document.getElementById('shovel-cursor');
     const bg = document.getElementById('background');
     const pg = document.getElementById('placed-grave');
+    const pf = document.getElementById('placed-flag'); // Флаг
     const homeBtn = document.getElementById('home-btn');
+    const raceModal = document.getElementById('race-modal'); // Модалка расы
 
     let isPlaying = false;
     let isGuestMode = false;
@@ -157,6 +216,7 @@
     let shovelNormal = 'photo/lap1.png';
     let shovelHit = 'photo/lap2.png';
 
+    // ДАННЫЕ ИГРОКОВ (Из "Лучшего")
     let defaultPlayers = [
         { name: "Andriy", id: "#8821", grave: "photo/g1.png", progress: 10 },
         { name: "Vika", id: "#4452", grave: "photo/g2.png", progress: 90 },
@@ -165,13 +225,17 @@
     ];
     let playersData = JSON.parse(localStorage.getItem('players_list_save')) || defaultPlayers;
 
+    // --- МАГАЗИН ---
     function openShop() {
         localStorage.setItem('isShopActive', 'true');
         window.location.href = 'magaz.html';
     }
 
+    // --- ОБНОВЛЕНИЕ ОБЪЕКТОВ (Надгробие + Флаг) ---
     function updateGraveDisplay() {
-        if (isGuestMode) return;
+        if (isGuestMode) return; // В гостях не меняем по памяти
+        
+        // 1. Надгробие (Слева)
         const savedGrave = localStorage.getItem('selectedGrave');
         if (savedGrave && savedGrave !== "none" && savedGrave !== "") {
             pg.src = savedGrave;
@@ -179,11 +243,52 @@
         } else {
             pg.style.display = 'none';
         }
+        
+        // 2. Флаг (Справа)
+        updateFlagDisplay();
+    }
+    
+    // Отдельная функция для флага (чтобы вызывать при выборе)
+    function updateFlagDisplay() {
+        if (isGuestMode) return;
+        const savedFlag = localStorage.getItem('playerRaceFlag');
+        if (savedFlag && savedFlag !== "") {
+            pf.src = savedFlag;
+            pf.style.display = 'block';
+        } else {
+            pf.style.display = 'none';
+        }
     }
 
+    // --- ЛОГИКА СТАРТА ---
     function startGame() {
         loader.style.display = 'none';
         entryBtn.style.display = 'none';
+        
+        // Проверяем, выбрана ли раса (флаг)
+        if (!localStorage.getItem('playerRaceFlag')) {
+            // Если нет — показываем окно выбора
+            raceModal.style.display = 'flex';
+        } else {
+            // Если да — запускаем игру сразу
+            finalizeStart();
+        }
+    }
+    
+    // --- НОВОЕ: ВЫБОР РАСЫ ---
+    function selectRace(flagPath) {
+        // 1. Запоминаем выбор навсегда
+        localStorage.setItem('playerRaceFlag', flagPath);
+        
+        // 2. Скрываем окно выбора
+        raceModal.style.display = 'none';
+        
+        // 3. Запускаем игру
+        finalizeStart();
+    }
+    
+    // Завершение запуска (Логика из "Лучшего")
+    function finalizeStart() {
         gameContainer.style.display = 'block';
         document.getElementById('shop-ui').style.display = 'flex';
         document.getElementById('players-list-ui').style.display = 'flex';
@@ -198,6 +303,7 @@
         }
     }
 
+    // --- ВОЗВРАТ ДОМОЙ ---
     function goHome() {
         homeBtn.style.display = 'none';
         isGuestMode = false;
@@ -212,10 +318,11 @@
         skulls = parseInt(localStorage.getItem('skulls')) || 0;
 
         initUser(); // ОБЯЗАТЕЛЬНО возвращаем свои данные профиля
-        updateGraveDisplay();
+        updateGraveDisplay(); // Обновляем и надгробие, и флаг
         updateArt();
     }
 
+    // --- УПРАВЛЕНИЕ ЛОПАТОЙ (Из "Лучшего") ---
     const moveShovel = (e) => {
         const x = e.clientX || (e.touches && e.touches[0].clientX);
         const y = e.clientY || (e.touches && e.touches[0].clientY);
@@ -229,14 +336,15 @@
     document.addEventListener('mousemove', moveShovel);
     document.addEventListener('touchmove', (e) => { if(e.cancelable) e.preventDefault(); moveShovel(e); }, {passive:false});
     document.addEventListener('touchstart', (e) => {
-        if (e.target.closest('#shop-ui, #players-list-ui, #players-modal, #home-btn, #entry-btn')) return;
+        if (e.target.closest('#shop-ui, #players-list-ui, #players-modal, #home-btn, #entry-btn, #race-modal')) return;
         moveShovel(e);
         if (isPlaying) doDig();
     });
     document.addEventListener('mousedown', (e) => {
-        if (isPlaying && !e.target.closest('#shop-ui, #players-list-ui, #players-modal, #home-btn, #entry-btn')) doDig();
+        if (isPlaying && !e.target.closest('#shop-ui, #players-list-ui, #players-modal, #home-btn, #entry-btn, #race-modal')) doDig();
     });
 
+    // --- КОПАНИЕ И ПРОГРЕСС (Из "Лучшего") ---
     function doDig() {
         const now = Date.now();
         if (now - lastClickTime < 80) return;
@@ -260,6 +368,7 @@
         updateArt();
     }
 
+    // --- ОБНОВЛЕНИЕ АРТА (Из "Лучшего") ---
     function updateArt() {
         document.getElementById('percent').innerText = progress;
         let n = Math.min(8, Math.max(1, Math.floor(progress / 12.5) + 1));
@@ -278,6 +387,7 @@
         localStorage.setItem('skulls', skulls);
     }
 
+    // --- ИГРОКИ (Из "Лучшего") ---
     function togglePlayersModal(s) { document.getElementById('players-modal').style.display = s ? 'block' : 'none'; if(s) renderPlayers(); }
 
     function renderPlayers() {
@@ -291,8 +401,12 @@
                 isGuestMode = true;
                 guestId = p.id;
                 progress = p.progress;
+                
                 pg.src = p.grave;
                 pg.style.display = 'block';
+                
+                pf.style.display = 'none'; // Скрываем СВОЙ флаг в гостях
+                
                 homeBtn.style.display = 'block';
                 // Временная подмена имени для гостевого режима
                 document.getElementById('user-name').innerText = p.name;
@@ -304,6 +418,7 @@
         });
     }
 
+    // --- ИНИЦИАЛИЗАЦИЯ ЮЗЕРА (Из "Лучшего") ---
     function initUser() {
         // Если мы НЕ в гостях, берем данные из Telegram
         if (!isGuestMode) {
@@ -318,6 +433,7 @@
         }
     }
 
+    // --- БОНУС АНИМАЦИЯ (Из "Лучшего") ---
     function showBonus(t) {
         const e = document.createElement('div'); e.className = 'bonus-text'; e.innerText = t;
         document.body.appendChild(e); setTimeout(() => e.remove(), 1000);
@@ -325,9 +441,10 @@
 
     // Авто-старт если вернулись из магазина
     if (localStorage.getItem('isShopActive') === 'true') {
-        startGame();
+        finalizeStart(); // Сразу в игру, пропуская видео и выбор расы
     }
 
+    // Логика видео и кнопки (Из "Лучшего")
     document.getElementById('loading-video').onended = () => {
         if (!isPlaying) entryBtn.style.display = 'block';
     };
