@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Магазин - Склеп</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        /* ОСНОВНОЙ КОРПУС */
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #000; font-family: sans-serif; display: flex; justify-content: center; }
+        .game-viewport { position: relative; width: 100vw; height: 177.78vw; max-height: 100vh; max-width: 56.25vh; background: #cbd0d8; display: flex; flex-direction: column; border: 2px solid #5d4037; }
+        
+        /* ШАПКА */
+        .shop-header { background: #6d7b8d; height: 45px; display: flex; justify-content: center; align-items: center; color: white; font-weight: bold; border-bottom: 2px solid #5d4037; }
+        
+        /* ВКЛАДКИ */
+        .tabs { display: flex; background: #9fa7b2; padding: 5px 10px 0; gap: 5px; }
+        .tab { flex: 1; text-align: center; padding: 10px; background: #bdc3cc; border-radius: 8px 8px 0 0; cursor: pointer; font-size: 14px; font-weight: bold; }
+        .tab.active { background: #cbd0d8; color: #000; }
+        
+        /* СЕТКА ТОВАРОВ */
+        .shop-content { flex-grow: 1; display: grid; grid-template-columns: repeat(2, 1fr); overflow-y: auto; background: #99a3af; gap: 8px; padding: 10px; align-content: start; }
+        .slot { background: #eef1f5; border: 1px solid rgba(0,0,0,0.2); display: none; flex-direction: column; align-items: center; padding: 10px; border-radius: 6px; position: relative; }
+        .slot.visible { display: flex; }
+
+        /* КОНТЕЙНЕР ДЛЯ ФОТО */
+        .img-container { 
+            width: 100%; 
+            height: 140px; 
+            background: white; 
+            border: 1px solid #999; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            margin-bottom: 8px; 
+            position: relative;
+            overflow: visible; 
+        }
+
+        /* ОБЩИЕ НАСТРОЙКИ КАРТИНОК */
+        .img-container img { 
+            max-width: 100%; 
+            max-height: 100%; 
+            object-fit: contain; 
+            position: absolute; 
+            transition: transform 0.2s; 
+        }
+
+        /* КНОПКА КУПИТЬ */
+        .buy-btn { width: 100%; background: #eee; border: 2px solid #666; padding: 8px 0; font-weight: bold; cursor: pointer; z-index: 10; position: relative; }
+        
+        /* НИЗ МАГАЗИНА */
+        .shop-footer { padding: 12px; background: #bdc3cc; border-top: 2px solid #8b5a2b; display: flex; flex-direction: column; gap: 8px; }
+        .close-btn { background: #adb6c1; border: 1px solid #7a8491; padding: 12px; font-weight: bold; cursor: pointer; }
+    </style>
+</head>
+<body>
+<div class="game-viewport">
+    <div class="shop-header">МАГАЗИН</div>
+    
+    <div class="tabs">
+        <div class="tab active" onclick="switchTab('graves', this)">Пам'ятники</div>
+        <div class="tab" onclick="switchTab('shovels', this)">Лопати</div>
+    </div>
+
+    <div class="shop-content">
+        
+        <div class="slot visible" data-cat="graves">
+            <div class="img-container">
+                <img src="photo/g1.png" style="transform: scale(1.7); top: 0px;">
+            </div>
+            <button class="buy-btn" onclick="buyItem('grave', 'photo/g1.png', null, 35)">💀 35</button>
+        </div>
+
+        <div class="slot visible" data-cat="graves">
+            <div class="img-container">
+                <img src="photo/g2.png" style="transform: scale(2.2); top: 5px;">
+            </div>
+            <button class="buy-btn" onclick="buyItem('grave', 'photo/g2.png', null, 40)">💀 40</button>
+        </div>
+
+        <div class="slot visible" data-cat="graves">
+            <div class="img-container">
+                <img src="photo/g3.png" style="transform: scale(2.2); top: 3px;">
+            </div>
+            <button class="buy-btn" onclick="buyItem('grave', 'photo/g3.png', null, 50)">💀 50</button>
+        </div>
+        
+        <div class="slot" data-cat="shovels">
+            <div class="img-container">
+                <img src="photo/lap3.png" style="transform: scale(1.0); top: 0px;">
+            </div>
+            <button class="buy-btn" onclick="buyItem('shovel', 'photo/lap3.png', 'photo/lap4.png', 100)">💀 100</button>
+        </div>
+
+        <div class="slot" data-cat="shovels">
+            <div class="img-container">
+                <img src="photo/lap5.png" style="transform: scale(1.0); top: 0px;">
+            </div>
+            <button class="buy-btn" onclick="buyItem('shovel', 'photo/lap5.png', 'photo/lap6.png', 200)">💀 200</button>
+        </div>
+
+        <div class="slot" data-cat="shovels">
+            <div class="img-container">
+                <img src="photo/lap7.png" style="transform: scale(1.0); top: 5px;">
+            </div>
+            <button class="buy-btn" onclick="buyItem('shovel', 'photo/lap7.png', 'photo/lap8.png', 300)">💀 300</button>
+        </div>
+
+    </div>
+
+    <div class="shop-footer">
+        <div style="text-align:center; font-weight:bold;">💀 Баланс: <span id="balance-val">0</span></div>
+        <button class="close-btn" onclick="goBack()">ЗАКРИТИ</button>
+    </div>
+</div>
+
+<script>
+    const tg = window.Telegram.WebApp;
+
+    function updateUI() { 
+        document.getElementById('balance-val').innerText = localStorage.getItem('skulls') || 500; 
+    }
+    updateUI();
+
+    function switchTab(cat, el) {
+        // Убираем активный класс у всех вкладок
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        // Добавляем активный класс нажатой вкладке
+        el.classList.add('active');
+        // Переключаем видимость слотов
+        document.querySelectorAll('.slot').forEach(s => {
+            if (s.getAttribute('data-cat') === cat) {
+                s.classList.add('visible');
+            } else {
+                s.classList.remove('visible');
+            }
+        });
+    }
+
+    function buyItem(type, main, hit, price) {
+        let skulls = parseInt(localStorage.getItem('skulls')) || 500;
+        if (skulls >= price) {
+            localStorage.setItem('skulls', skulls - price);
+            if (type === 'grave') {
+                localStorage.setItem('selectedGrave', main);
+            } else {
+                localStorage.setItem('selectedShovelMain', main);
+                localStorage.setItem('selectedShovelHit', hit);
+            }
+            updateUI();
+            tg.showAlert("Куплено!");
+        } else { 
+            tg.showAlert("Мало черепків!"); 
+        }
+    }
+
+    function goBack() { 
+        localStorage.setItem('isReturning', 'true'); 
+        window.location.href = 'index.html'; 
+    }
+</script>
+</body>
+</html>

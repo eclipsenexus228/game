@@ -12,50 +12,30 @@
             display: flex; justify-content: center; align-items: center;
             font-family: sans-serif; -webkit-user-select: none; user-select: none;
         }
-
         .game-viewport {
             position: relative;
             width: 100vw; height: 177.78vw; 
             max-height: 100vh; max-width: 56.25vh;
             background: #000; overflow: hidden;
         }
-
         #entry-btn {
-            position: absolute; 
-            bottom: 20%; 
-            left: 50%; 
-            transform: translateX(-50%);
-            padding: 18px 45px; 
-            background: #ffffff; 
-            color: #000000;
-            border: none; 
-            border-radius: 40px; 
-            font-weight: 900;
-            font-size: 20px; 
-            cursor: pointer;
-            z-index: 999999 !important; 
-            display: none; 
-            box-shadow: 0 0 30px rgba(255,255,255,0.6);
+            position: absolute; bottom: 20%; left: 50%; transform: translateX(-50%);
+            padding: 18px 45px; background: #ffffff; color: #000;
+            border: none; border-radius: 40px; font-weight: 900;
+            font-size: 20px; cursor: pointer; z-index: 999999;
+            display: none; box-shadow: 0 0 30px rgba(255,255,255,0.6);
             text-transform: uppercase;
         }
-
         #loading-screen {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             z-index: 500; background: #000;
         }
-        
-        #loading-video { 
-            width: 100%; height: 100%; object-fit: cover; 
-            pointer-events: none; 
-        }
-
+        #loading-video { width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
         #game-container {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             display: none; z-index: 10;
         }
-
         #background { width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
-        
         #user-profile {
             position: absolute; top: 52%; left: 28%; transform: translateX(-50%);
             display: flex; flex-direction: column; align-items: center; z-index: 100;
@@ -65,56 +45,25 @@
             color: white; font-size: 13px; font-weight: bold; margin-top: 5px;
             text-shadow: 2px 2px 4px #000; background: rgba(0,0,0,0.6); padding: 3px 8px;
         }
-
         #shovel-cursor {
             position: fixed; width: 100px; height: auto;
             pointer-events: none; z-index: 30000; 
             transform: translate(-20%, -80%); display: none;
         }
-
         #info {
             position: absolute; top: 15px; left: 15px;
             color: #fff; font-family: monospace; font-size: 14px;
             background: rgba(0,0,0,0.5); padding: 4px 8px; z-index: 50;
         }
-
-        /* --- МАГАЗИН В ТВОЕМ СТИЛЕ --- */
         #shop-ui {
             position: absolute; top: 10px; right: 10px;
             display: none; flex-direction: column; align-items: flex-end; gap: 8px; z-index: 1001;
         }
-        .btn-open-shop { background: gold; color: black; border: none; padding: 10px; border-radius: 10px; font-weight: bold; }
+        .btn-open-shop { background: gold; color: black; border: none; padding: 10px; border-radius: 10px; font-weight: bold; cursor: pointer; }
         .balance { color: white; background: rgba(0,0,0,0.5); padding: 5px; border-radius: 5px; font-size: 12px; }
-
-        #shop-modal {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 95%; height: 90%; background: #111; border: 4px solid gold; border-radius: 20px;
-            display: none; flex-direction: column; z-index: 40000; color: white; padding: 15px;
-        }
-
-        /* Кнопки вкладок */
-        .shop-tabs {
-            display: flex; gap: 5px; margin-bottom: 10px; overflow-x: auto; padding-bottom: 5px;
-        }
-        .tab-btn {
-            background: #222; color: gold; border: 1px solid gold; padding: 10px; 
-            border-radius: 10px; font-weight: bold; font-size: 11px; min-width: 85px;
-        }
-        .tab-btn.active { background: gold; color: #000; }
-
-        .shop-grid { display: grid; grid-template-columns: 1fr; gap: 30px; overflow-y: auto; margin-top: 10px; }
-        .shop-item { background: #222; padding: 30px; border-radius: 20px; text-align: center; border: 2px solid #444; }
-        .shop-item img { width: 300px; height: 300px; object-fit: contain; }
-        .shop-item button { width: 100%; background: gold; border: none; padding: 20px; margin-top: 15px; font-weight: bold; font-size: 24px; color: black; border-radius: 15px; }
-
         #placed-grave {
-            position: absolute; 
-            top: 20%; 
-            left: -20%; 
-            width: 440px; 
-            z-index: 45; 
-            display: none; 
-            pointer-events: none;
+            position: absolute; top: 20%; left: -20%; width: 440px; 
+            z-index: 45; display: none; pointer-events: none;
             filter: drop-shadow(0 15px 30px rgba(0,0,0,0.7));
         }
     </style>
@@ -125,24 +74,8 @@
     <button id="entry-btn" onclick="startGame()">Почати гру</button>
 
     <div id="shop-ui">
-        <button class="btn-open-shop" onclick="toggleShop(true)">МАГАЗИН</button>
-        <div class="balance">💀 <span id="skulls-val">100</span></div>
-    </div>
-
-    <div id="shop-modal">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 10px;">
-            <b style="font-size: 30px; color: gold;">МАГАЗИН</b>
-            <button onclick="toggleShop(false)" style="background:none; border:none; color:gold; font-size:45px;">✕</button>
-        </div>
-        
-        <div class="shop-tabs">
-            <button class="tab-btn active" onclick="switchTab('nadgrobki', this)">Надгробки</button>
-            <button class="tab-btn" onclick="switchTab('lopaty', this)">Лопати</button>
-            <button class="tab-btn" onclick="switchTab('groby', this)">Гроби</button>
-            <button class="tab-btn" onclick="switchTab('zabory', this)">Забори</button>
-        </div>
-
-        <div class="shop-grid" id="shop-items"></div>
+        <button class="btn-open-shop" onclick="window.location.href='magaz.html'">МАГАЗИН</button>
+        <div class="balance">💀 <span id="skulls-val">0</span></div>
     </div>
 
     <div id="loading-screen">
@@ -152,8 +85,8 @@
     </div>
 
     <div id="game-container">
-        <img id="placed-grave" src="">
-        <img id="background" src="photo/1.png">
+        <img id="placed-grave" src=""> 
+        <img id="background" src="photo/1.png"> 
         <div id="user-profile">
             <img id="user-avatar" src="">
             <span id="user-name">...</span>
@@ -163,7 +96,7 @@
 </div>
 
 <audio id="dig-sound"><source src="dig.mp3" type="audio/mpeg"></audio>
-<img id="shovel-cursor" src="lap1.png">
+<img id="shovel-cursor" src="photo/lap1.png">
 
 <script>
     const tg = window.Telegram.WebApp;
@@ -177,29 +110,19 @@
     const bg = document.getElementById('background');
     const digSound = document.getElementById('dig-sound');
 
-    let progress = 0;
+    // ПЕРЕМЕННЫЕ ЛОПАТЫ (Берем из памяти или стандарт)
+    let currentShovelMain = localStorage.getItem('selectedShovelMain') || 'photo/lap1.png';
+    let currentShovelHit = localStorage.getItem('selectedShovelHit') || 'photo/lap2.png';
+
+    let progress = parseInt(localStorage.getItem('savedProgress')) || 0;
     let step = 4; 
     let dir = step; 
     let isPlaying = false;
     let lastClickTime = 0;
-    let skulls = 100;
-    let currentTab = 'nadgrobki';
-
-    const database = {
-        nadgrobki: [
-            { id: 1, price: 35, src: 'photo/g1.png' },
-            { id: 2, price: 40, src: 'photo/g2.png' },
-            { id: 3, price: 50, src: 'photo/g3.png' },
-            { id: 4, price: 100, src: 'photo/g4.png' }
-        ],
-        lopaty: [], 
-        groby: [], 
-        zabory: []
-    };
+    let skulls = parseInt(localStorage.getItem('skulls')) || 500;
 
     function showButton() { entryBtn.style.display = 'block'; }
     video.onended = showButton;
-    video.ontimeupdate = function() { if (video.duration > 0 && video.currentTime >= video.duration - 0.5) showButton(); };
     setTimeout(showButton, 4000);
 
     function startGame() {
@@ -208,48 +131,26 @@
         gameContainer.style.display = 'block';
         document.getElementById('shop-ui').style.display = 'flex';
         isPlaying = true;
+        
+        localStorage.removeItem('isReturning');
+        
+        // Обновляем картинку лопаты перед началом
+        shovel.src = currentShovelMain;
+        
         initUser();
-    }
-
-    function toggleShop(show) {
-        const modal = document.getElementById('shop-modal');
-        modal.style.display = show ? 'flex' : 'none';
-        if(show) renderShop();
-    }
-
-    function switchTab(tab, btn) {
-        currentTab = tab;
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        renderShop();
-    }
-
-    function renderShop() {
-        const container = document.getElementById('shop-items');
-        container.innerHTML = '';
-        const items = database[currentTab] || [];
-        if(items.length === 0) {
-            container.innerHTML = '<div style="text-align:center; padding:20px; font-size:20px;">Порожньо</div>';
-            return;
+        
+        const savedGrave = localStorage.getItem('selectedGrave');
+        const pg = document.getElementById('placed-grave');
+        if (savedGrave) {
+            pg.src = savedGrave;
+            pg.style.display = 'block';
         }
-        items.forEach(item => {
-            container.innerHTML += `<div class="shop-item"><img src="${item.src}"><button onclick="buyItem(${item.id})">${item.price} 💀</button></div>`;
-        });
     }
 
-    function buyItem(id) {
-        const item = database[currentTab].find(i => i.id === id);
-        if (skulls >= item.price) {
-            skulls -= item.price;
-            document.getElementById('skulls-val').innerText = skulls;
-            if (currentTab === 'nadgrobki') {
-                const pg = document.getElementById('placed-grave');
-                pg.src = item.src;
-                pg.style.display = 'block';
-            }
-            toggleShop(false);
-            tg.HapticFeedback.notificationOccurred('success');
-        } else { tg.showAlert("Не вистачає черепків!"); }
+    function checkReturn() {
+        if (localStorage.getItem('isReturning') === 'true') {
+            startGame();
+        }
     }
 
     function initUser() {
@@ -263,48 +164,32 @@
 
     function updateArt() {
         document.getElementById('percent').innerText = progress;
-        let n = 1;
-        if (progress >= 100) n = 8;
-        else if (progress >= 85) n = 7;
-        else if (progress >= 70) n = 6;
-        else if (progress >= 55) n = 5;
-        else if (progress >= 40) n = 4;
-        else if (progress >= 25) n = 3;
-        else if (progress >= 10) n = 2;
-        else n = 1;
+        let n = Math.min(8, Math.max(1, Math.floor(progress / 12.5) + 1));
         bg.src = `photo/${n}.png`;
+        document.getElementById('skulls-val').innerText = skulls;
+        localStorage.setItem('savedProgress', progress);
+        localStorage.setItem('skulls', skulls);
     }
 
     function doDig() {
-        if (!isPlaying || document.getElementById('shop-modal').style.display === 'flex') return;
+        if (!isPlaying) return;
         const now = Date.now();
         if (now - lastClickTime < 100) return; 
         lastClickTime = now;
-        digSound.currentTime = 0;
-        digSound.play().catch(()=>{});
-        shovel.src = "lap2.png";
-        setTimeout(() => { shovel.src = "lap1.png"; }, 120);
+
+        if (digSound) { digSound.currentTime = 0; digSound.play().catch(()=>{}); }
+
+        // Анимация купленной лопаты
+        shovel.src = currentShovelHit; 
+        setTimeout(() => { shovel.src = currentShovelMain; }, 120);
+
         if (progress >= 100) dir = -step;
         else if (progress <= 0) dir = step;
         progress = Math.max(0, Math.min(100, progress + dir));
         updateArt();
     }
 
-    document.addEventListener('touchstart', (e) => {
-        if (!isPlaying) { if (e.target.id !== 'entry-btn') return; } 
-        else {
-            if (e.target.closest('#shop-modal') || e.target.closest('#shop-ui')) return;
-            if (e.cancelable) e.preventDefault(); 
-            const t = e.touches[0];
-            shovel.style.display = 'block';
-            shovel.style.left = t.clientX + 'px';
-            shovel.style.top = t.clientY + 'px';
-            doDig();
-        }
-    }, { passive: false });
-
-    document.addEventListener('mousedown', (e) => { if (isPlaying && window.matchMedia("(pointer: fine)").matches) doDig(); });
-
+    // Обработчики касаний
     const moveHandler = (e) => {
         if (!isPlaying) return;
         const x = e.clientX || (e.touches && e.touches[0].clientX);
@@ -315,8 +200,20 @@
             shovel.style.top = y + 'px';
         }
     };
+
+    document.addEventListener('touchstart', (e) => {
+        if (!isPlaying || e.target.closest('#shop-ui')) return;
+        if (e.cancelable) e.preventDefault();
+        moveHandler(e);
+        doDig();
+    }, { passive: false });
+
     document.addEventListener('mousemove', moveHandler);
-    document.addEventListener('touchmove', moveHandler, { passive: true });
+    document.addEventListener('mousedown', (e) => {
+        if (isPlaying && !e.target.closest('#shop-ui')) doDig();
+    });
+
+    checkReturn();
 </script>
 </body>
 </html>
