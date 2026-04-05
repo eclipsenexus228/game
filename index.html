@@ -6,6 +6,7 @@
     <title>Grave Game Online</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
+        /* ОБЩИЕ СТИЛИ ЭКРАНА */
         body, html {
             margin: 0; padding: 0; width: 100%; height: 100%;
             overflow: hidden; background-color: #000;
@@ -18,6 +19,8 @@
             max-height: 100vh; max-width: 56.25vh;
             background: #000; overflow: hidden;
         }
+
+        /* КНОПКА ВХОДА (ПОСЛЕ ВИДЕО) */
         #entry-btn {
             position: absolute; bottom: 20%; left: 50%; transform: translateX(-50%);
             padding: 18px 45px; background: #ffffff; color: #000;
@@ -26,16 +29,42 @@
             display: none; box-shadow: 0 0 30px rgba(255,255,255,0.6);
             text-transform: uppercase;
         }
+
+        /* ЭКРАН ЗАГРУЗКИ */
         #loading-screen {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             z-index: 500; background: #000;
         }
         #loading-video { width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
+
+        /* ИГРОВОЙ КОНТЕЙНЕР */
         #game-container {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             display: none; z-index: 10;
         }
         #background { width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
+
+        /* --- НАСТРОЙКИ ПАМЯТНИКА (ТО, ЧТО ТЫ ИСКАЛ) --- */
+        #placed-grave {
+            position: absolute; 
+            
+            /* 1. ВЫСОТА: чем меньше %, тем ВЫШЕ памятник (попробуй 15% или 20%) */
+            top: 15%; 
+            
+            /* 2. ЦЕНТРОВКА: оставляем 50% и -50% для идеального центра */
+            left: 18%; 
+            transform: translateX(-50%); 
+            
+            /* 3. РАЗМЕР: меняй это число (например, 300px или 450px) */
+            width: 350px; 
+            
+            z-index: 45; 
+            display: none; 
+            pointer-events: none;
+            filter: drop-shadow(0 15px 30px rgba(0,0,0,0.7));
+        }
+
+        /* ПРОФИЛЬ ИГРОКА (Аватар и имя) */
         #user-profile {
             position: absolute; top: 52%; left: 28%; transform: translateX(-50%);
             display: flex; flex-direction: column; align-items: center; z-index: 100;
@@ -45,27 +74,28 @@
             color: white; font-size: 13px; font-weight: bold; margin-top: 5px;
             text-shadow: 2px 2px 4px #000; background: rgba(0,0,0,0.6); padding: 3px 8px;
         }
+
+        /* КУРСОР ЛОПАТЫ */
         #shovel-cursor {
             position: fixed; width: 100px; height: auto;
             pointer-events: none; z-index: 30000; 
             transform: translate(-20%, -80%); display: none;
         }
+
+        /* ИНФОРМАЦИЯ О ПРОГРЕССЕ */
         #info {
             position: absolute; top: 15px; left: 15px;
             color: #fff; font-family: monospace; font-size: 14px;
             background: rgba(0,0,0,0.5); padding: 4px 8px; z-index: 50;
         }
+
+        /* ИНТЕРФЕЙС МАГАЗИНА */
         #shop-ui {
             position: absolute; top: 10px; right: 10px;
             display: none; flex-direction: column; align-items: flex-end; gap: 8px; z-index: 1001;
         }
         .btn-open-shop { background: gold; color: black; border: none; padding: 10px; border-radius: 10px; font-weight: bold; cursor: pointer; }
         .balance { color: white; background: rgba(0,0,0,0.5); padding: 5px; border-radius: 5px; font-size: 12px; }
-        #placed-grave {
-            position: absolute; top: 20%; left: -20%; width: 440px; 
-            z-index: 45; display: none; pointer-events: none;
-            filter: drop-shadow(0 15px 30px rgba(0,0,0,0.7));
-        }
     </style>
 </head>
 <body>
@@ -85,12 +115,11 @@
     </div>
 
     <div id="game-container">
-        <img id="placed-grave" src=""> 
-        <img id="background" src="photo/1.png"> 
-        <div id="user-profile">
+        <img id="placed-grave" src=""> <img id="background" src="photo/1.png"> <div id="user-profile">
             <img id="user-avatar" src="">
             <span id="user-name">...</span>
         </div>
+        
         <div id="info">Progress: <span id="percent">0</span>%</div>
     </div>
 </div>
@@ -110,7 +139,7 @@
     const bg = document.getElementById('background');
     const digSound = document.getElementById('dig-sound');
 
-    // ПЕРЕМЕННЫЕ ЛОПАТЫ (Берем из памяти или стандарт)
+    // Настройки лопат (сохраняются после покупки)
     let currentShovelMain = localStorage.getItem('selectedShovelMain') || 'photo/lap1.png';
     let currentShovelHit = localStorage.getItem('selectedShovelHit') || 'photo/lap2.png';
 
@@ -121,10 +150,12 @@
     let lastClickTime = 0;
     let skulls = parseInt(localStorage.getItem('skulls')) || 500;
 
+    // Показ кнопки после видео
     function showButton() { entryBtn.style.display = 'block'; }
     video.onended = showButton;
     setTimeout(showButton, 4000);
 
+    // Главная функция запуска
     function startGame() {
         loader.style.display = 'none';
         entryBtn.style.display = 'none';
@@ -134,11 +165,10 @@
         
         localStorage.removeItem('isReturning');
         
-        // Обновляем картинку лопаты перед началом
         shovel.src = currentShovelMain;
-        
         initUser();
         
+        // Подгружаем купленный памятник из памяти
         const savedGrave = localStorage.getItem('selectedGrave');
         const pg = document.getElementById('placed-grave');
         if (savedGrave) {
@@ -147,12 +177,14 @@
         }
     }
 
+    // Проверка, вернулся ли игрок из магазина
     function checkReturn() {
         if (localStorage.getItem('isReturning') === 'true') {
             startGame();
         }
     }
 
+    // Данные из Телеграм
     function initUser() {
         const user = tg.initDataUnsafe?.user;
         if (user) {
@@ -162,6 +194,7 @@
         updateArt();
     }
 
+    // Обновление прогресса и фона земли
     function updateArt() {
         document.getElementById('percent').innerText = progress;
         let n = Math.min(8, Math.max(1, Math.floor(progress / 12.5) + 1));
@@ -171,6 +204,7 @@
         localStorage.setItem('skulls', skulls);
     }
 
+    // Логика копания
     function doDig() {
         if (!isPlaying) return;
         const now = Date.now();
@@ -179,17 +213,18 @@
 
         if (digSound) { digSound.currentTime = 0; digSound.play().catch(()=>{}); }
 
-        // Анимация купленной лопаты
+        // Анимация удара лопатой
         shovel.src = currentShovelHit; 
         setTimeout(() => { shovel.src = currentShovelMain; }, 120);
 
+        // Движение прогресса туда-сюда
         if (progress >= 100) dir = -step;
         else if (progress <= 0) dir = step;
         progress = Math.max(0, Math.min(100, progress + dir));
         updateArt();
     }
 
-    // Обработчики касаний
+    // Управление лопатой (мышка/палец)
     const moveHandler = (e) => {
         if (!isPlaying) return;
         const x = e.clientX || (e.touches && e.touches[0].clientX);
