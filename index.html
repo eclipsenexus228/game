@@ -6,7 +6,6 @@
     <title>Grave Game Online</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        /* ОБЩИЕ СТИЛИ ЭКРАНА */
         body, html {
             margin: 0; padding: 0; width: 100%; height: 100%;
             overflow: hidden; background-color: #000;
@@ -20,51 +19,39 @@
             background: #000; overflow: hidden;
         }
 
-        /* КНОПКА ВХОДА (ПОСЛЕ ВИДЕО) */
         #entry-btn {
             position: absolute; bottom: 20%; left: 50%; transform: translateX(-50%);
-            padding: 18px 45px; background: #ffffff; color: #000;
+            padding: 18px 45px; background: #fff; color: #000;
             border: none; border-radius: 40px; font-weight: 900;
             font-size: 20px; cursor: pointer; z-index: 999999;
             display: none; box-shadow: 0 0 30px rgba(255,255,255,0.6);
-            text-transform: uppercase;
+        }
+        #home-btn {
+            position: absolute; bottom: 10%; left: 50%; transform: translateX(-50%);
+            padding: 15px 30px; background: #28a745; color: white;
+            border: 2px solid #fff; border-radius: 40px; font-weight: bold;
+            display: none; z-index: 2001; cursor: pointer;
         }
 
-        /* ЭКРАН ЗАГРУЗКИ */
         #loading-screen {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             z-index: 500; background: #000;
         }
-        #loading-video { width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
+        #loading-video { width: 100%; height: 100%; object-fit: cover; }
 
-        /* ИГРОВОЙ КОНТЕЙНЕР */
         #game-container {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             display: none; z-index: 10;
         }
         #background { width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
 
-        /* --- НАСТРОЙКИ ПАМЯТНИКА (ТО, ЧТО ТЫ ИСКАЛ) --- */
         #placed-grave {
-            position: absolute; 
-            
-            /* 1. ВЫСОТА: чем меньше %, тем ВЫШЕ памятник (попробуй 15% или 20%) */
-            top: 21%; 
-            
-            /* 2. ЦЕНТРОВКА: оставляем 50% и -50% для идеального центра */
-            left: 18%; 
-            transform: translateX(-50%); 
-            
-            /* 3. РАЗМЕР: меняй это число (например, 300px или 450px) */
-            width: 350px; 
-            
-            z-index: 45; 
-            display: none; 
-            pointer-events: none;
+            position: absolute; top: 21%; left: 18%; 
+            transform: translateX(-50%); width: 350px; 
+            z-index: 45; display: none; pointer-events: none;
             filter: drop-shadow(0 15px 30px rgba(0,0,0,0.7));
         }
 
-        /* ПРОФИЛЬ ИГРОКА (Аватар и имя) */
         #user-profile {
             position: absolute; top: 52%; left: 28%; transform: translateX(-50%);
             display: flex; flex-direction: column; align-items: center; z-index: 100;
@@ -72,40 +59,57 @@
         #user-avatar { width: 65px; height: 65px; border: 2px solid #fff; background: #222; object-fit: cover; }
         #user-name {
             color: white; font-size: 13px; font-weight: bold; margin-top: 5px;
-            text-shadow: 2px 2px 4px #000; background: rgba(0,0,0,0.6); padding: 3px 8px;
+            background: rgba(0,0,0,0.6); padding: 3px 8px; border-radius: 4px;
+            text-align: center; min-width: 50px;
         }
 
-        /* КУРСОР ЛОПАТЫ */
-        #shovel-cursor {
-            position: fixed; width: 100px; height: auto;
-            pointer-events: none; z-index: 30000; 
-            transform: translate(-20%, -80%); display: none;
-        }
+        #shop-ui, #players-list-ui { position: absolute; right: 10px; display: none; flex-direction: column; align-items: flex-end; gap: 8px; z-index: 1001; }
+        #shop-ui { top: 10px; }
+        #players-list-ui { top: 120px; }
+        .btn-open-shop { background: gold; color: black; border: none; padding: 10px; border-radius: 10px; font-weight: bold; cursor: pointer;}
+        .btn-open-players { background: #4a90e2; color: white; border: none; padding: 10px; border-radius: 10px; font-weight: bold; cursor: pointer;}
+        .balance { color: white; background: rgba(0,0,0,0.5); padding: 5px; border-radius: 5px; font-size: 14px; font-weight: bold; }
 
-        /* ИНФОРМАЦИЯ О ПРОГРЕССЕ */
-        #info {
-            position: absolute; top: 15px; left: 15px;
-            color: #fff; font-family: monospace; font-size: 14px;
-            background: rgba(0,0,0,0.5); padding: 4px 8px; z-index: 50;
+        #players-modal {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 85%; max-width: 300px; background: rgba(20, 20, 20, 0.98); 
+            border: 2px solid gold; border-radius: 15px; padding: 15px; 
+            display: none; z-index: 3000; color: white;
         }
+        #search-player { width: 100%; padding: 10px; margin-bottom: 15px; background: #333; color: white; border: 1px solid #555; box-sizing: border-box;}
+        .player-item { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #333; cursor: pointer;}
 
-        /* ИНТЕРФЕЙС МАГАЗИНА */
-        #shop-ui {
-            position: absolute; top: 10px; right: 10px;
-            display: none; flex-direction: column; align-items: flex-end; gap: 8px; z-index: 1001;
+        #shovel-cursor { position: fixed; width: 100px; height: auto; pointer-events: none; z-index: 30000; transform: translate(-20%, -80%); display: none; }
+        #info { position: absolute; top: 15px; left: 15px; color: #fff; background: rgba(0,0,0,0.5); padding: 4px 8px; z-index: 50; font-family: monospace;}
+        
+        .bonus-text {
+            position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%);
+            color: gold; font-size: 40px; font-weight: bold; z-index: 5000;
+            animation: fadeUp 1s forwards; text-shadow: 0 0 15px #000; pointer-events: none;
         }
-        .btn-open-shop { background: gold; color: black; border: none; padding: 10px; border-radius: 10px; font-weight: bold; cursor: pointer; }
-        .balance { color: white; background: rgba(0,0,0,0.5); padding: 5px; border-radius: 5px; font-size: 12px; }
+        @keyframes fadeUp { 0% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -150%); } }
     </style>
 </head>
 <body>
 
 <div class="game-viewport">
     <button id="entry-btn" onclick="startGame()">Почати гру</button>
+    <button id="home-btn" onclick="goHome()">🏠 ПОВЕРНУТИСЬ ДОДОМУ</button>
 
     <div id="shop-ui">
-        <button class="btn-open-shop" onclick="window.location.href='magaz.html'">МАГАЗИН</button>
+        <button class="btn-open-shop" onclick="openShop()">МАГАЗИН</button>
         <div class="balance">💀 <span id="skulls-val">0</span></div>
+    </div>
+
+    <div id="players-list-ui">
+        <button class="btn-open-players" onclick="togglePlayersModal(true)">ГРАВЦІ</button>
+    </div>
+
+    <div id="players-modal">
+        <h3>Список гравців</h3>
+        <input type="text" id="search-player" placeholder="Пошук..." oninput="filterPlayers()">
+        <div id="players-container" style="max-height: 250px; overflow-y: auto;"></div>
+        <button class="close-modal" onclick="togglePlayersModal(false)" style="width:100%; padding:10px; margin-top:10px; background:#cc3333; color:white; border:none; border-radius:8px; cursor: pointer;">ЗАКРИТИ</button>
     </div>
 
     <div id="loading-screen">
@@ -115,11 +119,12 @@
     </div>
 
     <div id="game-container">
-        <img id="placed-grave" src=""> <img id="background" src="photo/1.png"> <div id="user-profile">
+        <img id="placed-grave" src=""> 
+        <img id="background" src="photo/1.png"> 
+        <div id="user-profile">
             <img id="user-avatar" src="">
-            <span id="user-name">...</span>
+            <span id="user-name">Завантаження...</span>
         </div>
-        
         <div id="info">Progress: <span id="percent">0</span>%</div>
     </div>
 </div>
@@ -131,102 +136,87 @@
     const tg = window.Telegram.WebApp;
     tg.expand();
 
-    const video = document.getElementById('loading-video');
-    const entryBtn = document.getElementById('entry-btn');
     const loader = document.getElementById('loading-screen');
+    const entryBtn = document.getElementById('entry-btn');
     const gameContainer = document.getElementById('game-container');
     const shovel = document.getElementById('shovel-cursor');
     const bg = document.getElementById('background');
-    const digSound = document.getElementById('dig-sound');
+    const pg = document.getElementById('placed-grave');
+    const homeBtn = document.getElementById('home-btn');
 
-    // Настройки лопат (сохраняются после покупки)
-    let currentShovelMain = localStorage.getItem('selectedShovelMain') || 'photo/lap1.png';
-    let currentShovelHit = localStorage.getItem('selectedShovelHit') || 'photo/lap2.png';
-
-    let progress = parseInt(localStorage.getItem('savedProgress')) || 0;
-    let step = 4; 
-    let dir = step; 
     let isPlaying = false;
+    let isGuestMode = false;
+    let guestId = null;
     let lastClickTime = 0;
-    let skulls = parseInt(localStorage.getItem('skulls')) || 500;
 
-    // Показ кнопки после видео
-    function showButton() { entryBtn.style.display = 'block'; }
-    video.onended = showButton;
-    setTimeout(showButton, 4000);
+    let skulls = parseInt(localStorage.getItem('skulls')) || 0;
+    let progress = 0;
+    let step = 4;
+    let dir = step;
 
-    // Главная функция запуска
+    let shovelNormal = 'photo/lap1.png';
+    let shovelHit = 'photo/lap2.png';
+
+    let defaultPlayers = [
+        { name: "Andriy", id: "#8821", grave: "photo/g1.png", progress: 10 },
+        { name: "Vika", id: "#4452", grave: "photo/g2.png", progress: 90 },
+        { name: "Max_Graves", id: "#1092", grave: "photo/g3.png", progress: 55 },
+        { name: "Dmitro", id: "#7731", grave: "photo/g1.png", progress: 100 }
+    ];
+    let playersData = JSON.parse(localStorage.getItem('players_list_save')) || defaultPlayers;
+
+    function openShop() {
+        localStorage.setItem('isShopActive', 'true');
+        window.location.href = 'magaz.html';
+    }
+
+    function updateGraveDisplay() {
+        if (isGuestMode) return;
+        const savedGrave = localStorage.getItem('selectedGrave');
+        if (savedGrave && savedGrave !== "none" && savedGrave !== "") {
+            pg.src = savedGrave;
+            pg.style.display = 'block';
+        } else {
+            pg.style.display = 'none';
+        }
+    }
+
     function startGame() {
         loader.style.display = 'none';
         entryBtn.style.display = 'none';
         gameContainer.style.display = 'block';
         document.getElementById('shop-ui').style.display = 'flex';
+        document.getElementById('players-list-ui').style.display = 'flex';
         isPlaying = true;
         
-        localStorage.removeItem('isReturning');
-        
-        shovel.src = currentShovelMain;
-        initUser();
-        
-        // Подгружаем купленный памятник из памяти
-        const savedGrave = localStorage.getItem('selectedGrave');
-        const pg = document.getElementById('placed-grave');
-        if (savedGrave) {
-            pg.src = savedGrave;
-            pg.style.display = 'block';
+        // Если вернулись из магазина, не сбрасываем всё
+        if (localStorage.getItem('isShopActive') === 'true') {
+            localStorage.removeItem('isShopActive');
+            goHome(); 
+        } else {
+            goHome();
         }
     }
 
-    // Проверка, вернулся ли игрок из магазина
-    function checkReturn() {
-        if (localStorage.getItem('isReturning') === 'true') {
-            startGame();
-        }
-    }
+    function goHome() {
+        homeBtn.style.display = 'none';
+        isGuestMode = false;
+        guestId = null;
+        
+        // Обновляем данные лопат
+        shovelNormal = localStorage.getItem('selectedShovelMain') || 'photo/lap1.png';
+        shovelHit = localStorage.getItem('selectedShovelHit') || 'photo/lap2.png';
+        shovel.src = shovelNormal;
+        
+        progress = parseInt(localStorage.getItem('savedProgress')) || 0;
+        skulls = parseInt(localStorage.getItem('skulls')) || 0;
 
-    // Данные из Телеграм
-    function initUser() {
-        const user = tg.initDataUnsafe?.user;
-        if (user) {
-            document.getElementById('user-name').innerText = user.first_name;
-            document.getElementById('user-avatar').src = user.photo_url || `https://ui-avatars.com/api/?name=${user.first_name}`;
-        }
+        initUser(); // ОБЯЗАТЕЛЬНО возвращаем свои данные профиля
+        updateGraveDisplay();
         updateArt();
     }
 
-    // Обновление прогресса и фона земли
-    function updateArt() {
-        document.getElementById('percent').innerText = progress;
-        let n = Math.min(8, Math.max(1, Math.floor(progress / 12.5) + 1));
-        bg.src = `photo/${n}.png`;
-        document.getElementById('skulls-val').innerText = skulls;
-        localStorage.setItem('savedProgress', progress);
-        localStorage.setItem('skulls', skulls);
-    }
-
-    // Логика копания
-    function doDig() {
-        if (!isPlaying) return;
-        const now = Date.now();
-        if (now - lastClickTime < 100) return; 
-        lastClickTime = now;
-
-        if (digSound) { digSound.currentTime = 0; digSound.play().catch(()=>{}); }
-
-        // Анимация удара лопатой
-        shovel.src = currentShovelHit; 
-        setTimeout(() => { shovel.src = currentShovelMain; }, 120);
-
-        // Движение прогресса туда-сюда
-        if (progress >= 100) dir = -step;
-        else if (progress <= 0) dir = step;
-        progress = Math.max(0, Math.min(100, progress + dir));
-        updateArt();
-    }
-
-    // Управление лопатой (мышка/палец)
-    const moveHandler = (e) => {
-        if (!isPlaying) return;
+    const moveShovel = (e) => {
         const x = e.clientX || (e.touches && e.touches[0].clientX);
         const y = e.clientY || (e.touches && e.touches[0].clientY);
         if (x && y) {
@@ -236,19 +226,114 @@
         }
     };
 
+    document.addEventListener('mousemove', moveShovel);
+    document.addEventListener('touchmove', (e) => { if(e.cancelable) e.preventDefault(); moveShovel(e); }, {passive:false});
     document.addEventListener('touchstart', (e) => {
-        if (!isPlaying || e.target.closest('#shop-ui')) return;
-        if (e.cancelable) e.preventDefault();
-        moveHandler(e);
-        doDig();
-    }, { passive: false });
-
-    document.addEventListener('mousemove', moveHandler);
+        if (e.target.closest('#shop-ui, #players-list-ui, #players-modal, #home-btn, #entry-btn')) return;
+        moveShovel(e);
+        if (isPlaying) doDig();
+    });
     document.addEventListener('mousedown', (e) => {
-        if (isPlaying && !e.target.closest('#shop-ui')) doDig();
+        if (isPlaying && !e.target.closest('#shop-ui, #players-list-ui, #players-modal, #home-btn, #entry-btn')) doDig();
     });
 
-    checkReturn();
+    function doDig() {
+        const now = Date.now();
+        if (now - lastClickTime < 80) return;
+        lastClickTime = now;
+
+        shovel.src = shovelHit;
+        const s = document.getElementById('dig-sound');
+        if (s) { s.currentTime = 0; s.play().catch(()=>{}); }
+        setTimeout(() => { shovel.src = shovelNormal; }, 120);
+
+        let oldP = progress;
+        if (progress >= 100) dir = -step;
+        else if (progress <= 0) dir = step;
+        progress = Math.max(0, Math.min(100, progress + dir));
+
+        if (oldP < 100 && progress >= 100) {
+            skulls += 25;
+            showBonus("+25 💀");
+            tg.HapticFeedback.notificationOccurred('success');
+        }
+        updateArt();
+    }
+
+    function updateArt() {
+        document.getElementById('percent').innerText = progress;
+        let n = Math.min(8, Math.max(1, Math.floor(progress / 12.5) + 1));
+        bg.src = `photo/${n}.png`;
+        document.getElementById('skulls-val').innerText = skulls;
+
+        if (!isGuestMode) {
+            localStorage.setItem('savedProgress', progress);
+        } else {
+            let idx = playersData.findIndex(p => p.id === guestId);
+            if (idx !== -1) {
+                playersData[idx].progress = progress;
+                localStorage.setItem('players_list_save', JSON.stringify(playersData));
+            }
+        }
+        localStorage.setItem('skulls', skulls);
+    }
+
+    function togglePlayersModal(s) { document.getElementById('players-modal').style.display = s ? 'block' : 'none'; if(s) renderPlayers(); }
+
+    function renderPlayers() {
+        const c = document.getElementById('players-container');
+        c.innerHTML = "";
+        playersData.forEach(p => {
+            const d = document.createElement('div');
+            d.className = 'player-item';
+            d.innerHTML = `<span>${p.name}</span> <span>${p.progress}%</span>`;
+            d.onclick = () => {
+                isGuestMode = true;
+                guestId = p.id;
+                progress = p.progress;
+                pg.src = p.grave;
+                pg.style.display = 'block';
+                homeBtn.style.display = 'block';
+                // Временная подмена имени для гостевого режима
+                document.getElementById('user-name').innerText = p.name;
+                document.getElementById('user-avatar').src = `https://ui-avatars.com/api/?name=${p.name}&background=random`;
+                togglePlayersModal(false);
+                updateArt();
+            };
+            c.appendChild(d);
+        });
+    }
+
+    function initUser() {
+        // Если мы НЕ в гостях, берем данные из Telegram
+        if (!isGuestMode) {
+            const u = tg.initDataUnsafe?.user;
+            if (u) {
+                document.getElementById('user-name').innerText = u.first_name || "Гравець";
+                document.getElementById('user-avatar').src = u.photo_url || `https://ui-avatars.com/api/?name=${u.first_name || 'P'}`;
+            } else {
+                document.getElementById('user-name').innerText = "Гравець";
+                document.getElementById('user-avatar').src = "https://ui-avatars.com/api/?name=P";
+            }
+        }
+    }
+
+    function showBonus(t) {
+        const e = document.createElement('div'); e.className = 'bonus-text'; e.innerText = t;
+        document.body.appendChild(e); setTimeout(() => e.remove(), 1000);
+    }
+
+    // Авто-старт если вернулись из магазина
+    if (localStorage.getItem('isShopActive') === 'true') {
+        startGame();
+    }
+
+    document.getElementById('loading-video').onended = () => {
+        if (!isPlaying) entryBtn.style.display = 'block';
+    };
+    setTimeout(() => { 
+        if(loader.style.display !== 'none' && !isPlaying) entryBtn.style.display = 'block'; 
+    }, 4000);
 </script>
 </body>
 </html>
